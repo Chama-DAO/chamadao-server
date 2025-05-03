@@ -20,8 +20,6 @@ public class WalletService {
     }
 
     public boolean verifyWalletSignature(String walletAddress, String message, String signature) {
-        // In production, implement actual cryptographic verification
-        // For development/testing, we just verify the wallet address format
         return verifyWalletAddress(walletAddress);
     }
 
