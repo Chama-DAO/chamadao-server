@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class KycSubmissionDto {
     private String walletAddress;
-    private String documentType; // NATIONAL_ID, PASSPORT, etc.
+    private String documentType;
     private String documentNumber;
-    private byte[] documentFile; // Binary file data or a secure reference
+    private byte[] documentFile;
 }
 
