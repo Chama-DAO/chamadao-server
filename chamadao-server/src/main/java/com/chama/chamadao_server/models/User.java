@@ -1,5 +1,6 @@
 package com.chama.chamadao_server.models;
 
+import com.chama.chamadao_server.models.enums.KycStatus;
 import com.chama.chamadao_server.models.enums.UserRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -20,9 +21,6 @@ import java.util.Set;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
-
     @Column(unique = true, nullable = false, length = 42)
     @Pattern(regexp = "^0x[a-fA-F0-9]{40}$", message = "Invalid Ethereum wallet address format")
     private String walletAddress;
@@ -31,8 +29,10 @@ public class User {
     private String mobileNumber;
     @Email
     private String email;
-    private boolean kycVerified = false;
+    @Enumerated(EnumType.STRING)
+    private KycStatus kycStatus = KycStatus.PENDING;
 
+    private Double reputationScore;
     //timestamps
     @CreatedDate
     private LocalDate createdAt;
