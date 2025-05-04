@@ -18,6 +18,11 @@ target/
 *.iws
 *.iml
 *.ipr
+.idea/discord.xml
+.idea/compiler.xml
+.idea/material_theme_project_new.xml
+.idea/modules.xml
+.idea/vcs.xml
 
 ### NetBeans ###
 /nbproject/private/
