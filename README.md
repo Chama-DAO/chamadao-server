@@ -74,7 +74,6 @@ The server handles critical backend operations after users have created their ac
 ## Getting Started
 ### Prerequisites
 - Java SDK 23
-- Jakarta EE
 - Spring Data JPA
 - Spring MVC
 - Database (PostgreSQL/MongoDB recommended)
@@ -143,5 +142,5 @@ Key API endpoints include:
 ## License
 This project is licensed under the [MIT License](LICENSE)
 ## Contact
-ChamaDAO Team - contact@chamadao.com
+ChamaDAO Team - ##
 Project Link: [https://github.com/Chama-DAO/chamadao-server](https://github.com/Chama-DAO/chamadao-server)
