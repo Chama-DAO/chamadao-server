@@ -14,12 +14,11 @@ public class UserMapper {
         }
         
         return UserDto.builder()
-                .id(user.getId())
                 .walletAddress(user.getWalletAddress())
                 .fullName(user.getFullName())
                 .mobileNumber(user.getMobileNumber())
                 .email(user.getEmail())
-                .kycVerified(user.isKycVerified())
+                //.kycVerified(user.setKycStatus())
                 .roles(user.getRoles())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
