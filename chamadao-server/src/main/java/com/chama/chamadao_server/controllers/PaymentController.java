@@ -69,10 +69,10 @@ public class PaymentController {
             @Parameter(description = "Amount in KES to deposit", example = "1000.00")
             @RequestParam BigDecimal amount) {
 
-        log.info("Received deposit request for wallet address: {}, phone number: {}, amount: {}", 
+        log.info("Received deposit request for wallet address: {}, phone number: {}, amount: {}",
                 walletAddress, phoneNumber, amount);
 
-        MpesaStkPushResponse response = mpesaService.initiateDeposit(walletAddress, phoneNumber, amount);
+        MpesaStkPushResponse response = mpesaService.initiateDeposit(walletAddress,phoneNumber, amount);
         return ResponseEntity.ok(response);
     }
 
