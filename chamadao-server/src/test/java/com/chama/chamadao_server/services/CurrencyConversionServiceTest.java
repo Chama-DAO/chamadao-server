@@ -42,8 +42,7 @@ public class CurrencyConversionServiceTest {
         ReflectionTestUtils.setField(currencyConversionService, "restTemplate", restTemplate);
 
         // Set default values for the properties
-        ReflectionTestUtils.setField(currencyConversionService, "exchangeRateApiUrl", "https://api.exchangerate-api.com/v4/latest/USD");
-        ReflectionTestUtils.setField(currencyConversionService, "exchangeRateApiKey", "");
+        ReflectionTestUtils.setField(currencyConversionService, "exchangeRateApiUrl", "https://v6.exchangerate-api.com/v6/87e1c74d3df1076e4dd856d2/latest/USD");
         ReflectionTestUtils.setField(currencyConversionService, "cacheMinutes", 60);
     }
 
@@ -80,10 +79,8 @@ public class CurrencyConversionServiceTest {
     @Test
     public void testFallbackExchangeRate_WhenApiCallFails() {
         // Setup
-        when(restTemplate.exchange(
+        when(restTemplate.getForEntity(
                 anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
                 eq(Object.class)))
                 .thenThrow(new RuntimeException("API call failed"));
 
@@ -107,10 +104,8 @@ public class CurrencyConversionServiceTest {
         ResponseEntity<Object> responseEntity = new ResponseEntity<>(createMockExchangeRateResponse(), HttpStatus.OK);
 
         // Mock the RestTemplate to return our response
-        when(restTemplate.exchange(
+        when(restTemplate.getForEntity(
                 anyString(),
-                eq(HttpMethod.GET),
-                any(HttpEntity.class),
                 eq(Object.class)))
                 .thenReturn(responseEntity);
     }
