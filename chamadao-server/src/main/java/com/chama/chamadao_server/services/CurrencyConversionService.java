@@ -27,19 +27,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CurrencyConversionService {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    
-    @Value("${currency.exchange.api.url:https://api.exchangerate-api.com/v4/latest/USD}")
+
+    @Value("${currency.exchange.api.url}")
     private String exchangeRateApiUrl;
-    
-    @Value("${currency.exchange.api.key:}")
-    private String exchangeRateApiKey;
-    
+
     @Value("${currency.exchange.cache.minutes:60}")
     private int cacheMinutes;
-    
+
     // Cache for exchange rates
     private final Map<String, ExchangeRateData> exchangeRateCache = new ConcurrentHashMap<>();
-    
+
     /**
      * Convert KES to USDT
      * @param amountKES The amount in KES
@@ -47,14 +44,14 @@ public class CurrencyConversionService {
      */
     public BigDecimal convertKesToUsdt(BigDecimal amountKES) {
         log.info("Converting {} KES to USDT", amountKES);
-        
+
         BigDecimal exchangeRate = getKesUsdtExchangeRate();
         BigDecimal amountUSDT = amountKES.divide(exchangeRate, 6, RoundingMode.HALF_UP);
-        
+
         log.info("Converted {} KES to {} USDT (rate: {})", amountKES, amountUSDT, exchangeRate);
         return amountUSDT;
     }
-    
+
     /**
      * Convert USDT to KES
      * @param amountUSDT The amount in USDT
@@ -62,14 +59,14 @@ public class CurrencyConversionService {
      */
     public BigDecimal convertUsdtToKes(BigDecimal amountUSDT) {
         log.info("Converting {} USDT to KES", amountUSDT);
-        
+
         BigDecimal exchangeRate = getKesUsdtExchangeRate();
         BigDecimal amountKES = amountUSDT.multiply(exchangeRate).setScale(2, RoundingMode.HALF_UP);
-        
+
         log.info("Converted {} USDT to {} KES (rate: {})", amountUSDT, amountKES, exchangeRate);
         return amountKES;
     }
-    
+
     /**
      * Get the exchange rate between KES and USDT
      * @return The exchange rate (KES per USDT)
@@ -81,28 +78,22 @@ public class CurrencyConversionService {
             log.debug("Using cached exchange rate: {}", cachedData.rate());
             return cachedData.rate();
         }
-        
+
         // If not, fetch a new rate
         log.info("Fetching current KES/USDT exchange rate");
-        
+
         try {
-            HttpHeaders headers = new HttpHeaders();
-            if (exchangeRateApiKey != null && !exchangeRateApiKey.isEmpty()) {
-                headers.set("apikey", exchangeRateApiKey);
-            }
-            
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            
-            ResponseEntity<ExchangeRateResponse> response = restTemplate.exchange(
-                    exchangeRateApiUrl, HttpMethod.GET, entity, ExchangeRateResponse.class);
-            
+            // Make a simple GET request to the API
+            ResponseEntity<ExchangeRateResponse> response = restTemplate.getForEntity(
+                    exchangeRateApiUrl, ExchangeRateResponse.class);
+
             if (response.getBody() != null && response.getBody().getRates() != null) {
                 BigDecimal kesRate = response.getBody().getRates().getKES();
-                
+
                 // Cache the rate
                 ExchangeRateData newData = new ExchangeRateData(kesRate, System.currentTimeMillis(), cacheMinutes);
                 exchangeRateCache.put("KES_USDT", newData);
-                
+
                 log.info("Fetched exchange rate: 1 USDT = {} KES", kesRate);
                 return kesRate;
             } else {
@@ -116,7 +107,7 @@ public class CurrencyConversionService {
             return getFallbackExchangeRate();
         }
     }
-    
+
     /**
      * Get a fallback exchange rate if the API call fails
      * @return A fallback exchange rate
@@ -128,7 +119,7 @@ public class CurrencyConversionService {
             log.warn("Using expired cached exchange rate: {}", cachedData.rate());
             return cachedData.rate();
         }
-        
+
         // If no cached rate, use a hardcoded fallback
         BigDecimal fallbackRate = new BigDecimal("130.00"); // Approximate KES/USD rate
         log.warn("Using hardcoded fallback exchange rate: {}", fallbackRate);
@@ -146,7 +137,7 @@ public class CurrencyConversionService {
                 return currentTime - timestamp > validTime;
             }
         }
-    
+
     /**
      * Response class for exchange rate API
      */
@@ -157,7 +148,7 @@ public class CurrencyConversionService {
         private Rates rates;
 
     }
-    
+
     /**
      * Rates class for exchange rate API response
      */
