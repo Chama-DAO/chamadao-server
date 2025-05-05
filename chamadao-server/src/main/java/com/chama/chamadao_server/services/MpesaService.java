@@ -9,16 +9,12 @@ import com.chama.chamadao_server.repository.TransactionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.springframework.http.*;
+import okhttp3.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,11 +31,12 @@ import java.util.Base64;
 public class MpesaService {
 
     private final MPesaConfig mpesaConfig;
-    private final RestTemplate restTemplate = new RestTemplate();
     private final TransactionRepository transactionRepository;
     private final CurrencyConversionService currencyConversionService;
+    private final BlockchainService blockchainService;
     private final OkHttpClient okHttpClient = new OkHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     /**
      * Generate an access token for M-Pesa API
@@ -83,7 +80,7 @@ public class MpesaService {
      * @return The STK push response
      */
     public MpesaStkPushResponse initiateDeposit(String walletAddress, String phoneNumber, BigDecimal amount) {
-        log.info("Initiating deposit for wallet address: {}, phone number: {}, amount: {}", 
+        log.info("Initiating deposit for wallet address: {}, phone number: {}, amount: {}",
                 walletAddress, phoneNumber, amount);
 
         // Format phone number (remove leading 0 or +254 and add 254)
@@ -115,11 +112,12 @@ public class MpesaService {
         String accessToken;
         try {
             AccessTokenResponse tokenResponse = generateAccessToken();
-            accessToken = tokenResponse.getAccessToken();
+            accessToken = tokenResponse.getAccess_token();
             if (accessToken == null || accessToken.isEmpty()) {
                 log.error("Failed to generate access token for STK push");
                 throw new RuntimeException("Failed to generate access token for STK push");
             }
+            log.info("Access token generated successfully: {}", accessToken);
         } catch (IOException e) {
             log.error("Failed to generate access token for STK push", e);
             throw new RuntimeException("Failed to generate access token for STK push", e);
@@ -129,45 +127,53 @@ public class MpesaService {
         log.debug("STK push URL: {}", stkPushUrl);
         log.debug("STK push request: {}", request);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + accessToken);
-
-        HttpEntity<MpesaStkPushRequest> entity = new HttpEntity<>(request, headers);
-
         try {
+            // Convert request to JSON
+            String jsonRequest = objectMapper.writeValueAsString(request);
+            RequestBody requestBody = RequestBody.create(jsonRequest, JSON);
+
+            // Build the request
+            Request httpRequest = new Request.Builder()
+                    .url(stkPushUrl)
+                    .post(requestBody)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
             log.debug("Sending STK push request to M-Pesa API");
-            ResponseEntity<MpesaStkPushResponse> response = restTemplate.exchange(
-                    stkPushUrl, HttpMethod.POST, entity, MpesaStkPushResponse.class);
 
-            log.debug("STK push response status: {}", response.getStatusCode());
+            // Execute the request
+            try (Response response = okHttpClient.newCall(httpRequest).execute()) {
+                log.debug("STK push response status: {}", response.code());
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                log.info("Successfully initiated deposit: {}", response.getBody().getCheckoutRequestID());
-                log.debug("STK push response: {}", response.getBody());
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    MpesaStkPushResponse stkResponse = objectMapper.readValue(responseBody, MpesaStkPushResponse.class);
 
-                // Create transaction record
-                // For deposits, we'll set the USDT amount when the callback is received
-                Transaction transaction = Transaction.builder()
-                        .walletAddress(walletAddress)
-                        .mobileNumber(phoneNumber)
-                        .type(TransactionType.DEPOSIT)
-                        .amountKES(amount)
-                        .amountUSDT(BigDecimal.ZERO) // Will be updated when the callback is received
-                        .status(TransactionStatus.PENDING)
-                        .description("M-Pesa deposit initiated")
-                        .createdAt(LocalDateTime.now())
-                        .build();
+                    log.info("Successfully initiated deposit: {}", stkResponse.getCheckoutRequestID());
+                    log.debug("STK push response: {}", stkResponse);
 
-                transactionRepository.save(transaction);
+                    // Create transaction record
+                    // For deposits, we'll set the USDT amount when the callback is received
+                    Transaction transaction = Transaction.builder()
+                            .walletAddress(walletAddress)
+                            .mobileNumber(phoneNumber)
+                            .type(TransactionType.DEPOSIT)
+                            .amountKES(amount)
+                            .amountUSDT(BigDecimal.ZERO) // Will be updated when the callback is received
+                            .status(TransactionStatus.PENDING)
+                            .description("M-Pesa deposit initiated")
+                            .createdAt(LocalDateTime.now())
+                            .build();
 
-                return response.getBody();
-            } else {
-                log.error("Failed to initiate deposit: {}", response.getStatusCode());
-                if (response.getBody() != null) {
-                    log.error("Error response: {}", response.getBody());
+                    transactionRepository.save(transaction);
+
+                    return stkResponse;
+                } else {
+                    String responseBody = response.body() != null ? response.body().string() : "No response body";
+                    log.error("Failed to initiate deposit: {} - {}", response.code(), responseBody);
+                    throw new RuntimeException("Failed to initiate deposit: " + response.code());
                 }
-                throw new RuntimeException("Failed to initiate deposit: " + response.getStatusCode());
             }
         } catch (Exception e) {
             log.error("Exception while initiating deposit", e);
@@ -211,7 +217,27 @@ public class MpesaService {
             BigDecimal amountUSDT = currencyConversionService.convertKesToUsdt(transaction.getAmountKES());
             transaction.setAmountUSDT(amountUSDT);
 
+            // Save the transaction first to ensure we have the USDT amount recorded
             transactionRepository.save(transaction);
+
+            // Initiate USDT transfer to the user's wallet
+            log.info("Initiating USDT transfer of {} to wallet: {}", 
+                    amountUSDT, transaction.getWalletAddress());
+
+            CompletableFuture<String> transferFuture = blockchainService.transferUsdtToWallet(transaction);
+
+            // Handle the transfer result asynchronously
+            transferFuture.thenAccept(txHash -> {
+                // Update transaction with blockchain transaction hash
+                transaction.setBlockchainTxHash(txHash);
+                transactionRepository.save(transaction);
+                log.info("USDT transfer initiated successfully. Transaction hash: {}", txHash);
+            }).exceptionally(ex -> {
+                log.error("Failed to transfer USDT to wallet: {}", transaction.getWalletAddress(), ex);
+                // We don't change the transaction status since the M-Pesa payment was successful
+                // In a production system, you might want to retry the transfer or notify an admin
+                return null;
+            });
 
             log.info("Deposit completed: {}", receiptNumber);
             return true;
@@ -253,7 +279,7 @@ public class MpesaService {
         String accessToken;
         try {
             AccessTokenResponse tokenResponse = generateAccessToken();
-            accessToken = tokenResponse.getAccessToken();
+            accessToken = tokenResponse.getAccess_token();
             if (accessToken == null || accessToken.isEmpty()) {
                 log.error("Failed to generate access token for B2C withdrawal");
                 throw new RuntimeException("Failed to generate access token for B2C withdrawal");
@@ -267,47 +293,55 @@ public class MpesaService {
         log.debug("B2C URL: {}", b2cUrl);
         log.debug("B2C request: {}", request);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + accessToken);
-
-        HttpEntity<MpesaB2CRequest> entity = new HttpEntity<>(request, headers);
-
         try {
+            // Convert request to JSON
+            String jsonRequest = objectMapper.writeValueAsString(request);
+            RequestBody requestBody = RequestBody.create(jsonRequest, JSON);
+
+            // Build the request
+            Request httpRequest = new Request.Builder()
+                    .url(b2cUrl)
+                    .post(requestBody)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
             log.debug("Sending B2C request to M-Pesa API");
-            ResponseEntity<MpesaB2CResponse> response = restTemplate.exchange(
-                    b2cUrl, HttpMethod.POST, entity, MpesaB2CResponse.class);
 
-            log.debug("B2C response status: {}", response.getStatusCode());
+            // Execute the request
+            try (Response response = okHttpClient.newCall(httpRequest).execute()) {
+                log.debug("B2C response status: {}", response.code());
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                log.info("Successfully initiated withdrawal: {}", response.getBody().getConversationID());
-                log.debug("B2C response: {}", response.getBody());
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    MpesaB2CResponse b2cResponse = objectMapper.readValue(responseBody, MpesaB2CResponse.class);
 
-                // Create transaction record
-                // For withdrawals, we first calculate how much USDT is equivalent to the KES amount
-                BigDecimal amountUSDT = currencyConversionService.convertKesToUsdt(amount);
+                    log.info("Successfully initiated withdrawal: {}", b2cResponse.getConversationID());
+                    log.debug("B2C response: {}", b2cResponse);
 
-                Transaction transaction = Transaction.builder()
-                        .walletAddress(walletAddress)
-                        .mobileNumber(phoneNumber)
-                        .type(TransactionType.WITHDRAWAL)
-                        .amountKES(amount)
-                        .amountUSDT(amountUSDT)
-                        .status(TransactionStatus.PENDING)
-                        .description("M-Pesa withdrawal initiated")
-                        .createdAt(LocalDateTime.now())
-                        .build();
+                    // Create transaction record
+                    // For withdrawals, we first calculate how much USDT is equivalent to the KES amount
+                    BigDecimal amountUSDT = currencyConversionService.convertKesToUsdt(amount);
 
-                transactionRepository.save(transaction);
+                    Transaction transaction = Transaction.builder()
+                            .walletAddress(walletAddress)
+                            .mobileNumber(phoneNumber)
+                            .type(TransactionType.WITHDRAWAL)
+                            .amountKES(amount)
+                            .amountUSDT(amountUSDT)
+                            .status(TransactionStatus.PENDING)
+                            .description("M-Pesa withdrawal initiated")
+                            .createdAt(LocalDateTime.now())
+                            .build();
 
-                return response.getBody();
-            } else {
-                log.error("Failed to initiate withdrawal: {}", response.getStatusCode());
-                if (response.getBody() != null) {
-                    log.error("Error response: {}", response.getBody());
+                    transactionRepository.save(transaction);
+
+                    return b2cResponse;
+                } else {
+                    String responseBody = response.body() != null ? response.body().string() : "No response body";
+                    log.error("Failed to initiate withdrawal: {} - {}", response.code(), responseBody);
+                    throw new RuntimeException("Failed to initiate withdrawal: " + response.code());
                 }
-                throw new RuntimeException("Failed to initiate withdrawal: " + response.getStatusCode());
             }
         } catch (Exception e) {
             log.error("Exception while initiating withdrawal", e);
@@ -382,37 +416,5 @@ public class MpesaService {
 
         // Otherwise, add 254 prefix
         return "254" + digitsOnly;
-    }
-
-    /**
-     * Inner class for access token response
-     */
-    private static class AccessTokenResponse {
-        private String access_token;
-        private String expires_in;
-
-        public String getAccessToken() {
-            return access_token;
-        }
-
-        public void setAccessToken(String access_token) {
-            this.access_token = access_token;
-        }
-
-        public String getExpiresIn() {
-            return expires_in;
-        }
-
-        public void setExpiresIn(String expires_in) {
-            this.expires_in = expires_in;
-        }
-
-        @Override
-        public String toString() {
-            return "AccessTokenResponse{" +
-                    "access_token='" + (access_token != null ? access_token.substring(0, Math.min(10, access_token.length())) + "..." : "null") + '\'' +
-                    ", expires_in='" + expires_in + '\'' +
-                    '}';
-        }
     }
 }
