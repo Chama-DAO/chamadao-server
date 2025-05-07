@@ -110,11 +110,11 @@ public class KycService {
                 .build();
 
         // Update user's KYC status if it's not already in progress
-        if (user.getKycStatus() == KycStatus.PENDING) {
-            user.setKycStatus(KycStatus.PENDING);
-            // updatedAt will be set automatically by JPA auditing
-            userRepository.save(user);
-        }
+//        if (user.getKycStatus() == KycStatus.PENDING) {
+//            user.setKycStatus(KycStatus.PENDING);
+//            // updatedAt will be set automatically by JPA auditing
+//            userRepository.save(user);
+//        }
 
         log.info("KYC document uploaded successfully for wallet address: {}", walletAddress);
         return kycDocumentRepository.save(kycDocument);
@@ -140,7 +140,7 @@ public class KycService {
 
         User user = userRepository.findByWalletAddress(walletAddress)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setKycStatus(KycStatus.VERIFIED);
+        //user.setKycStatus(KycStatus.VERIFIED);
         // updatedAt will be set automatically by JPA auditing
         userRepository.save(user);
 
@@ -165,7 +165,7 @@ public class KycService {
 
         User user = userRepository.findByWalletAddress(walletAddress)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setKycStatus(KycStatus.REJECTED);
+       // user.setKycStatus(KycStatus.REJECTED);
         // updatedAt will be set automatically by JPA auditing
         userRepository.save(user);
 
@@ -183,7 +183,7 @@ public class KycService {
         User user = userRepository.findByWalletAddress(walletAddress)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return user.getKycStatus();
+        return null; //todo
     }
 
 }
