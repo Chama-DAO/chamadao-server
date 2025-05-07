@@ -29,7 +29,7 @@ public class BlockchainService {
 
     private final WalletService walletService;
 
-    @Value("${blockchain.rpc.url:https://mainnet.infura.io/v3/your-infura-key}")
+    @Value("${blockchain.rpc.url:https://mainnet.infura.io/v3/}")
     private String rpcUrl;
 
     @Value("${blockchain.wallet.private-key}")
