@@ -55,11 +55,11 @@ public class UserService {
 
         User newUser = new User();
         newUser.setWalletAddress(walletAddress);
-        newUser.setKycStatus(KycStatus.PENDING);
+        //newUser.setKycStatus(KycStatus.PENDING);
         newUser.setReputationScore(0.0);
         // createdAt and updatedAt will be set automatically by JPA auditing
-        newUser.setRoles(new HashSet<>());
-        newUser.addRole(UserRole.CHAMA_MEMBER);
+        //newUser.setRoles(new HashSet<>());
+        //newUser.addRole(UserRole.CHAMA_MEMBER);
 
         log.info("Saving new user profile for wallet address: {}", walletAddress);
         return userRepository.save(newUser);
@@ -126,20 +126,20 @@ public class UserService {
         }
 
         // Ensure required fields are set
-        if (user.getKycStatus() == null) {
-            log.debug("Setting default KYC status for wallet address: {}", user.getWalletAddress());
-            user.setKycStatus(KycStatus.PENDING);
-        }
+//        if (user.getKycStatus() == null) {
+//            log.debug("Setting default KYC status for wallet address: {}", user.getWalletAddress());
+//            user.setKycStatus(KycStatus.PENDING);
+//        }
         if (user.getReputationScore() == null) {
             log.debug("Setting default reputation score for wallet address: {}", user.getWalletAddress());
             user.setReputationScore(0.0);
         }
         // createdAt and updatedAt will be set automatically by JPA auditing
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            log.debug("Setting default role for wallet address: {}", user.getWalletAddress());
-            user.setRoles(new HashSet<>());
-            user.addRole(UserRole.CHAMA_MEMBER);
-        }
+//        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+//            log.debug("Setting default role for wallet address: {}", user.getWalletAddress());
+//            user.setRoles(new HashSet<>());
+//            user.addRole(UserRole.CHAMA_MEMBER);
+//        }
 
         log.info("Saving new user profile for wallet address: {}", user.getWalletAddress());
         return userRepository.save(user);
