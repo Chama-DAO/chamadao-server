@@ -18,8 +18,12 @@ public class UserDto {
     private String fullName;
     private String mobileNumber;
     private String email;
-    private boolean kycVerified;
+    // KYC details commented out as per requirements (future feature)
+    // private boolean kycVerified;
     private LocalDate createdAt;
     private LocalDate updatedAt;
-    private Set<UserRole> roles;
+
+    // Reference to the Chama the user belongs to
+    private String chamaWalletAddress;
+    private String chamaName;
 }
