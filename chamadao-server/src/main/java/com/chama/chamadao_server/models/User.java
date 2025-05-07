@@ -2,10 +2,13 @@ package com.chama.chamadao_server.models;
 
 import com.chama.chamadao_server.models.enums.KycStatus;
 import com.chama.chamadao_server.models.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,6 +21,8 @@ import java.util.Set;
 @Data
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
 
     @Id
@@ -26,11 +31,20 @@ public class User {
     private String walletAddress;
 
     private String fullName;
+    private String username;
     private String mobileNumber;
     @Email
     private String email;
-    @Enumerated(EnumType.STRING)
-    private KycStatus kycStatus = KycStatus.PENDING;
+    private String country;
+    // KYC details commented out as per requirements (future feature)
+    // @Enumerated(EnumType.STRING)
+    // private KycStatus kycStatus = KycStatus.PENDING;
+
+
+    @JsonBackReference
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "chama_wallet_address", referencedColumnName = "walletAddress")
+    private Chama chama;
 
     private Double reputationScore;
     //timestamps
@@ -40,19 +54,19 @@ public class User {
     private LocalDate updatedAt;
 
     // for roles - rbac
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
-    @Enumerated(EnumType.STRING)
-    private Set<UserRole> roles = new HashSet<>();
+//    @ElementCollection(fetch = FetchType.EAGER)
+//    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+//    @Column(name = "role")
+//    @Enumerated(EnumType.STRING)
+//    private Set<UserRole> roles = new HashSet<>();
 
-    public void addRole(UserRole role) {
-        this.roles.add(role);
-    }
-    public void removeRole(UserRole role) {
-        this.roles.remove(role);
-    }
-    public boolean hasRole(UserRole role) {
-        return this.roles.contains(role);
-    }
+//    public void addRole(UserRole role) {
+//        this.roles.add(role);
+//    }
+//    public void removeRole(UserRole role) {
+//        this.roles.remove(role);
+//    }
+//    public boolean hasRole(UserRole role) {
+//        return this.roles.contains(role);
+//    }
 }
