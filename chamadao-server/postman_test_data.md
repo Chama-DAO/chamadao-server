@@ -15,6 +15,19 @@ This document provides test data for all endpoints in the ChamaDAO application a
 3. Set up environment variables (optional)
 4. Use the test data provided below for each endpoint
 
+### Blockchain Configuration
+
+The application integrates with the Ethereum blockchain for USDT transfers. The following configuration is used:
+
+- **RPC URL**: The URL of the Ethereum node (default: https://mainnet.infura.io/v3/)
+- **USDT Contract Address**: The address of the USDT token contract on Ethereum (default: 0xdAC17F958D2ee523a2206206994597C13D831ec7)
+- **Wallet Private Key**: The private key of the wallet used for sending USDT (this should be kept secure)
+
+When testing the deposit flow, after a successful M-Pesa payment, the system will automatically:
+1. Convert the KES amount to USDT using current exchange rates
+2. Transfer the USDT to the user's wallet address
+3. Record the blockchain transaction hash in the database
+
 ## User Endpoints
 
 ### 1. Get User Profile
@@ -267,7 +280,7 @@ GET /api/users/0x1234567890123456789012345678901234567890
 
 **Endpoint:** `POST /api/payments/deposit`
 
-**Description:** Initiate a deposit using M-Pesa STK push.
+**Description:** Initiate a deposit using M-Pesa STK push. After a successful M-Pesa payment, the system automatically converts the KES amount to USDT and transfers it to the user's wallet address on the blockchain.
 
 **Request Parameters:**
 - `walletAddress` (query parameter): The wallet address of the user
@@ -289,6 +302,12 @@ POST /api/payments/deposit?walletAddress=0x1234567890123456789012345678901234567
   "customerMessage": "Success. Request accepted for processing"
 }
 ```
+
+**Blockchain Integration:**
+After the M-Pesa payment is confirmed via the STK callback, the system:
+1. Converts the KES amount to USDT using current exchange rates
+2. Transfers the USDT amount to the user's wallet address on the Ethereum blockchain
+3. Records the blockchain transaction hash in the database
 
 **Postman Instructions:**
 1. Create a new POST request
@@ -340,7 +359,7 @@ POST /api/payments/withdraw?walletAddress=0x123456789012345678901234567890123456
 
 **Endpoint:** `POST /api/payments/mpesa/stk-callback`
 
-**Description:** Callback endpoint for M-Pesa STK push (deposit).
+**Description:** Callback endpoint for M-Pesa STK push (deposit). When this callback is received with a successful result code, the system automatically initiates a USDT transfer to the user's wallet on the blockchain.
 
 **Request Body:**
 ```json
@@ -380,6 +399,13 @@ POST /api/payments/withdraw?walletAddress=0x123456789012345678901234567890123456
 ```
 "Callback processed successfully"
 ```
+
+**Blockchain Integration:**
+When this callback is processed successfully:
+1. The system finds the pending transaction associated with the phone number
+2. Converts the KES amount to USDT using current exchange rates
+3. Initiates a transfer of USDT to the user's wallet address on the Ethereum blockchain
+4. Updates the transaction record with the blockchain transaction hash
 
 **Postman Instructions:**
 1. Create a new POST request
