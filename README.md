@@ -88,16 +88,17 @@ The server handles critical backend operations after users have created their ac
 ```
 1. Configure environment variables:
 ``` bash
+    # Ignore this for now
    cp .env.example .env
    # Edit .env with your specific configuration
 ```
 1. Build the project:
 ``` bash
-   ./mvnw clean install
+   ./mvnw clean install -DskipTests
 ```
 1. Run the server:
 ``` bash
-   ./mvnw spring-boot:run
+   ./mvnw spring-boot:run -DskipTests
 ```
 ## API Documentation
 The server exposes APIs for the mobile application to interact with. Documentation can be accessed at:
@@ -114,7 +115,7 @@ Key API endpoints include:
 ### Production Deployment
 1. Build the production package:
 ``` bash
-   ./mvnw clean package -Pprod
+   ./mvnw clean package -DskipTests
 ```
 1. Deploy using Docker:
 ``` bash
