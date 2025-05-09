@@ -59,10 +59,10 @@ public class UserControllerTests {
         userDto.setFullName("John Doe Updated");
         userDto.setMobileNumber("+254712345678");
         userDto.setEmail("john.updated@example.com");
-        userDto.setKycVerified(false);
-        Set<UserRole> roles = new HashSet<>();
-        roles.add(UserRole.CHAMA_MEMBER);
-        userDto.setRoles(roles);
+       // userDto.setKycVerified(false);
+//        Set<UserRole> roles = new HashSet<>();
+//        roles.add(UserRole.CHAMA_MEMBER);
+        //userDto.setRoles(roles);
 
         // Execute
         ResponseEntity<UserDto> response = restTemplate.exchange(
@@ -89,10 +89,10 @@ public class UserControllerTests {
         userDto.setFullName("Jane Smith");
         userDto.setMobileNumber("+254723456789");
         userDto.setEmail("jane.smith@example.com");
-        userDto.setKycVerified(false);
+        //userDto.setKycVerified(false);
         Set<UserRole> roles = new HashSet<>();
         roles.add(UserRole.CHAMA_MEMBER);
-        userDto.setRoles(roles);
+        //userDto.setRoles(roles);
 
         // Execute
         ResponseEntity<UserDto> response = restTemplate.postForEntity(
