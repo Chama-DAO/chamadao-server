@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,11 +48,11 @@ public class UserControllerTest {
         testUser.setFullName("Test User");
         testUser.setEmail("test@example.com");
         testUser.setMobileNumber("+1234567890");
-        testUser.setKycStatus(KycStatus.PENDING);
+        //testUser.setKycStatus(KycStatus.PENDING);
         testUser.setReputationScore(0.0);
-        testUser.setCreatedAt(LocalDate.now());
-        testUser.setUpdatedAt(LocalDate.now());
-        testUser.setRoles(new HashSet<>());
+        testUser.setCreatedAt(LocalDateTime.now());
+        testUser.setUpdatedAt(LocalDateTime.now());
+        //testUser.setRoles(new HashSet<>());
 
         // Setup test user DTO
         testUserDto = new UserDto();
@@ -59,10 +60,10 @@ public class UserControllerTest {
         testUserDto.setFullName("Test User");
         testUserDto.setEmail("test@example.com");
         testUserDto.setMobileNumber("+1234567890");
-        testUserDto.setKycVerified(false);
-        testUserDto.setCreatedAt(LocalDate.now());
-        testUserDto.setUpdatedAt(LocalDate.now());
-        testUserDto.setRoles(new HashSet<>());
+        //testUserDto.setKycVerified(false);
+        testUserDto.setCreatedAt(LocalDateTime.now());
+        testUserDto.setUpdatedAt(LocalDateTime.now());
+        //testUserDto.setRoles(new HashSet<>());
     }
 
     @Test
