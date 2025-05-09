@@ -90,8 +90,8 @@ public class UserControllerTests {
         userDto.setMobileNumber("+254723456789");
         userDto.setEmail("jane.smith@example.com");
         //userDto.setKycVerified(false);
-        Set<UserRole> roles = new HashSet<>();
-        roles.add(UserRole.CHAMA_MEMBER);
+//        Set<UserRole> roles = new HashSet<>();
+//        roles.add(UserRole.CHAMA_MEMBER);
         //userDto.setRoles(roles);
 
         // Execute
