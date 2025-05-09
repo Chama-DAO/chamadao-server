@@ -1,13 +1,13 @@
 package com.chama.chamadao_server.models.dto;
 
-import com.chama.chamadao_server.models.enums.UserRole;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-import java.util.Set;
+import java.time.LocalDateTime;
+
 
 @Data
 @AllArgsConstructor
@@ -18,12 +18,16 @@ public class UserDto {
     private String fullName;
     private String mobileNumber;
     private String email;
+    private String country;
+    private String idNumber;
     // KYC details commented out as per requirements (future feature)
     // private boolean kycVerified;
-    private LocalDate createdAt;
-    private LocalDate updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    // Reference to the Chama the user belongs to
+/*
+    Reference to the Chama the user belongs to
     private String chamaWalletAddress;
     private String chamaName;
+*/
 }
