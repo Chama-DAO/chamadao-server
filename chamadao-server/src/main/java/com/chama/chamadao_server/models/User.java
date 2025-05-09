@@ -14,6 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,11 +32,12 @@ public class User {
     private String walletAddress;
 
     private String fullName;
-    private String username;
+    //private String username;
     private String mobileNumber;
     @Email
     private String email;
     private String country;
+    private String idNumber;
     // KYC details commented out as per requirements (future feature)
     // @Enumerated(EnumType.STRING)
     // private KycStatus kycStatus = KycStatus.PENDING;
@@ -49,9 +51,9 @@ public class User {
     private Double reputationScore;
     //timestamps
     @CreatedDate
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     @LastModifiedDate
-    private LocalDate updatedAt;
+    private LocalDateTime updatedAt;
 
     // for roles - rbac
 //    @ElementCollection(fetch = FetchType.EAGER)
