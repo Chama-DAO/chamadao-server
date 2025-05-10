@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -83,7 +84,7 @@ public class ChamaController {
             ) {
         log.info("Request to create Chama with wallet address: {}", 
                 chamaDto.getWalletAddress());
-        ChamaDto createdChama = chamaService.createChama(chamaDto, null); // Passing null as creator wallet address
+        ChamaDto createdChama = chamaService.createChama(chamaDto); // Passing null as creator wallet address
         return ResponseEntity.status(HttpStatus.CREATED).body(createdChama);
     }
 
@@ -133,5 +134,11 @@ public class ChamaController {
         log.info("Request to remove member {} from Chama {}", userWalletAddress, chamaWalletAddress);
         ChamaDto updatedChama = chamaService.removeMemberFromChama(chamaWalletAddress, userWalletAddress);
         return ResponseEntity.ok(updatedChama);
+    }
+
+    @Operation( summary = "upload chama image", description = "end point to upload the chama profile")
+    @PostMapping("/image")
+    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(chamaService.uploadChamaImage(file));
     }
 }
