@@ -10,9 +10,17 @@ import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +30,9 @@ public class ChamaService {
     private final ChamaRepository chamaRepository;
     private final UserRepository userRepository;
     private final ChamaMapper chamaMapper;
+
+    @Value("${project.image}")
+    private String imageUploadDir;
 
     /**
      * Find a Chama by its wallet address
@@ -47,11 +58,10 @@ public class ChamaService {
     /**
      * Create a new Chama
      * @param chamaDto The Chama details
-     * @param creatorWalletAddress The wallet address of the creator (not used, kept for backward compatibility)
      * @return The created Chama DTO
      */
     @Transactional
-    public ChamaDto createChama(ChamaDto chamaDto, String creatorWalletAddress) {
+    public ChamaDto createChama(ChamaDto chamaDto) {
         log.info("Creating new Chama with wallet address: {}", 
                 chamaDto.getWalletAddress());
 
@@ -59,10 +69,6 @@ public class ChamaService {
         if (chamaRepository.findById(chamaDto.getWalletAddress()).isPresent()) {
             throw new RuntimeException("Chama already exists with wallet address: " + chamaDto.getWalletAddress());
         }
-
-        // Get the creator user - commented out as per requirements
-        // User creator = userRepository.findByWalletAddress(creatorWalletAddress)
-        //         .orElseThrow(() -> new RuntimeException("Creator not found with wallet address: " + creatorWalletAddress));
 
         // Convert DTO to entity
         Chama chama = chamaMapper.toEntity(chamaDto);
@@ -167,5 +173,37 @@ public class ChamaService {
         log.info("Member removed successfully from Chama {}", chamaWalletAddress);
 
         return chamaMapper.toDto(updatedChama);
+    }
+
+    public String uploadChamaImage(MultipartFile file){
+        if (file == null || file.isEmpty()){
+            throw new IllegalArgumentException("File is null or empty");
+        }
+
+        //get original file name
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName == null || originalFileName.isEmpty()){
+            throw new IllegalArgumentException("File name is null or empty");
+        }
+
+        //generate a unique file name
+        String randomUUID = UUID.randomUUID().toString();
+        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        String fileName = randomUUID.concat(fileExtension);
+
+        //define the relative path
+        File directory = new File(imageUploadDir);
+        if (!directory.exists()){
+            directory.mkdirs();
+        }
+        //file path
+        String filePath = imageUploadDir + File.separator + fileName;
+
+        try {
+            Files.copy(file.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return fileName;
     }
 }
