@@ -141,4 +141,30 @@ public class ChamaController {
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(chamaService.uploadChamaImage(file));
     }
+
+    /**
+     * Upload a profile image for a Chama
+     *
+     * @param file The image file to upload
+     * @param chamaWalletAddress The wallet address of the Chama
+     * @return The URL/path of the uploaded image
+     */
+    @Operation(summary = "Upload Chama profile image",
+            description = "Uploads and associates a profile image with a specific Chama")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or file format"),
+            @ApiResponse(responseCode = "404", description = "Chama not found"),
+            @ApiResponse(responseCode = "500", description = "Failed to process image")
+    })
+    @PostMapping("/{chamaWalletAddress}/image")
+    public ResponseEntity<String> uploadChamaImage(
+            @Parameter(description = "Image file to upload", required = true)
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Wallet address of the Chama", required = true)
+            @PathVariable String chamaWalletAddress) {
+        log.info("Request to upload image for Chama {}", chamaWalletAddress);
+        String imageUrl = chamaService.uploadChamaImage(file, chamaWalletAddress);
+        return ResponseEntity.ok(imageUrl);
+    }
 }
