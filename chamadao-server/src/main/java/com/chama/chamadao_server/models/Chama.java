@@ -37,6 +37,14 @@ public class Chama {
     @JsonManagedReference
     @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, orphanRemoval = false)
     private List<User> members = new ArrayList<>();
+    private Long contributionAmount;
+    private Long contributionPeriod;
+    private int maximumMembers;
+    private Long maximumLoanAmount;
+    private int loanPaymentPeriod;
+    private Long loanPenaltyAmount;
+    private Long registrationFee;
+    private String chamaProfileImageUrl;
 
     // Timestamps
     @CreatedDate
