@@ -20,8 +20,14 @@ public class ChamaDto {
     private String walletAddress;
     private String name;
     private String description;
-    // private String creatorWalletAddress; // Commented out as per requirements
     private List<String> memberWalletAddresses = new ArrayList<>();
+    private Long contributionAmount;
+    private Long contributionPeriod;
+    private int maximumMembers;
+    private Long maximumLoanAmount;
+    private int loanPaymentPeriod;
+    private Long loanPenaltyAmount;
+    private String chamaProfileImageUrl;
     private LocalDate createdAt;
     private LocalDate updatedAt;
 }
