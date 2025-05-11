@@ -1,15 +1,15 @@
 package com.chama.chamadao_server.controllers;
 
 import com.chama.chamadao_server.models.Notification;
+import com.chama.chamadao_server.models.dto.ChamaDto;
 import com.chama.chamadao_server.services.ChamaService;
 import com.chama.chamadao_server.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -26,4 +26,35 @@ public class NotificationController {
         List<Notification> notifications = notificationService.getUserNotifications(walletAddress);
         return ResponseEntity.ok(notifications);
     }
+
+    @GetMapping("/{walletAddress}/unread")
+    ResponseEntity<List<Notification>> getUnreadNotifications(@PathVariable String walletAddress){
+        log.info("Request to get unread notifications for user {}", walletAddress);
+        List<Notification> notifications = notificationService.getUnreadNotifications(walletAddress);
+        return ResponseEntity.ok(notifications);
+    }
+
+    @GetMapping("/{walletAddress}/unread/count")
+    ResponseEntity<Long> getUnreadCount(@PathVariable String walletAddress){
+        log.info("Request to get unread notification count for user {}", walletAddress);
+        long count = notificationService.getUnreadCount(walletAddress);
+        return ResponseEntity.ok(count);
+    }
+
+    @PostMapping("/invite")
+    public ResponseEntity<Notification> inviteUserToChama(
+            @RequestParam String senderWalletAddress,
+            @RequestParam String receiverWalletAddress,
+            @RequestParam String chamaWalletAddress) {
+
+        // Get chama name
+        ChamaDto chama = chamaService.findChamaByWalletAddress(chamaWalletAddress);
+
+        Notification notification = notificationService.createChamaInvitation(
+                senderWalletAddress, receiverWalletAddress, chamaWalletAddress, chama.getName());
+
+        return ResponseEntity.ok(notification);
+    }
+
+
 }
