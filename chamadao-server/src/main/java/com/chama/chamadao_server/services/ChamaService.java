@@ -63,7 +63,7 @@ public class ChamaService {
      * @return The created Chama DTO
      */
     @Transactional
-    public ChamaDto createChama(ChamaDto chamaDto) {
+    public ChamaDto createChama(ChamaDto chamaDto, String creatorWalletAddress) {
         log.info("Creating new Chama with wallet address: {}", 
                 chamaDto.getWalletAddress());
 
@@ -72,14 +72,18 @@ public class ChamaService {
             throw new RuntimeException("Chama already exists with wallet address: " + chamaDto.getWalletAddress());
         }
 
+        User creator = userRepository.findByWalletAddress(creatorWalletAddress)
+                .orElseThrow(() -> {
+                    User newUser = new User();
+                    newUser.setWalletAddress(creatorWalletAddress);
+                    return userRepository.save(newUser);
+                });
         // Convert DTO to entity
         Chama chama = chamaMapper.toEntity(chamaDto);
 
-        // Set the creator - commented out as per requirements
-        // chama.setCreator(creator);
+        chama.setCreator(creator);
 
-        // Add the creator as a member - commented out as per requirements
-        // chama.addMember(creator);
+        chama.addMember(creator);
 
         // Add CHAMA_ADMIN role to the creator if they don't have it - commented out as per requirements
         // if (!creator.hasRole(UserRole.CHAMA_ADMIN)) {
