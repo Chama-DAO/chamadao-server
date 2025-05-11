@@ -1,5 +1,6 @@
 package com.chama.chamadao_server.models.dto;
 
+import com.chama.chamadao_server.models.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class ChamaDto {
     private String walletAddress;
     private String name;
     private String description;
+    private User creator;
     private List<String> memberWalletAddresses = new ArrayList<>();
     private Long contributionAmount;
     private Long contributionPeriod;
