@@ -78,13 +78,13 @@ public class ChamaController {
     @PostMapping
     public ResponseEntity<ChamaDto> createChama(
             @Parameter(description = "Chama details", required = true)
-            @Valid @RequestBody ChamaDto chamaDto
-            // @Parameter(description = "Wallet address of the creator", required = true)
-            // @RequestParam String creatorWalletAddress
+            @Valid @RequestBody ChamaDto chamaDto,
+            @Parameter(description = "Wallet address of the creator", required = true)
+            @RequestParam String creatorWalletAddress
             ) {
         log.info("Request to create Chama with wallet address: {}", 
                 chamaDto.getWalletAddress());
-        ChamaDto createdChama = chamaService.createChama(chamaDto); // Passing null as creator wallet address
+        ChamaDto createdChama = chamaService.createChama(chamaDto, creatorWalletAddress); // Passing null as creator wallet address
         return ResponseEntity.status(HttpStatus.CREATED).body(createdChama);
     }
 
