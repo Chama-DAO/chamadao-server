@@ -4,7 +4,6 @@ import com.chama.chamadao_server.mappers.ChamaMapper;
 import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.User;
 import com.chama.chamadao_server.models.dto.ChamaDto;
-import com.chama.chamadao_server.models.enums.UserRole;
 import com.chama.chamadao_server.repository.ChamaRepository;
 import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -73,7 +72,7 @@ public class ChamaService {
         }
 
         User creator = userRepository.findByWalletAddress(creatorWalletAddress)
-                .orElseThrow(() -> {
+                .orElseGet(() -> {
                     User newUser = new User();
                     newUser.setWalletAddress(creatorWalletAddress);
                     return userRepository.save(newUser);
@@ -85,7 +84,6 @@ public class ChamaService {
 
         chama.addMember(creator);
 
-        // Add CHAMA_ADMIN role to the creator if they don't have it - commented out as per requirements
         // if (!creator.hasRole(UserRole.CHAMA_ADMIN)) {
         //     creator.addRole(UserRole.CHAMA_ADMIN);
         // }
