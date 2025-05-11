@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Chama Notifications Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stomp-websocket@2.3.4-next/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .connection-status { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .notification { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+        .notification.unread { border-left: 4px solid #007bff; }
+        .notification button { margin-right: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0069d9; }
+        .container { display: flex; gap: 20px; }
+        .left-panel, .right-panel { flex: 1; }
+        .testing-steps { background-color: #f8f9fa; padding: 15px; border-radius: 5px; }
+        h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+<h1>Chama Notifications Testing Page</h1>
+
+<div id="connection-status" class="connection-status disconnected">
+    Disconnected
+</div>
+
+<div class="container">
+    <div class="left-panel">
+        <div class="card">
+            <h2>Connect to WebSocket</h2>
+            <div class="form-group">
+                <label for="wallet-address">Your Wallet Address:</label>
+                <input type="text" id="wallet-address" placeholder="0x...">
+            </div>
+            <button id="connect-btn">Connect</button>
+            <button id="disconnect-btn" disabled>Disconnect</button>
+        </div>
+
+        <div class="card">
+            <h2>Send Test Invitation</h2>
+            <div class="form-group">
+                <label for="sender-address">Sender Wallet Address:</label>
+                <input type="text" id="sender-address" placeholder="0x...">
+            </div>
+            <div class="form-group">
+                <label for="receiver-address">Receiver Wallet Address:</label>
+                <input type="text" id="receiver-address" placeholder="0x...">
+            </div>
+            <div class="form-group">
+                <label for="chama-address">Chama Wallet Address:</label>
+                <input type="text" id="chama-address" placeholder="0x...">
+            </div>
+            <button id="send-invitation-btn">Send Invitation</button>
+        </div>
+
+        <div class="card testing-steps">
+            <h3>Testing Steps:</h3>
+            <ol>
+                <li>Enter your wallet address and click "Connect"</li>
+                <li>Fill the invitation form with test addresses</li>
+                <li>Use the same address as both receiver and your wallet address to see notifications</li>
+                <li>Click "Send Invitation" to create a test notification</li>
+                <li>You should see the notification appear in the right panel</li>
+                <li>Test the accept/reject/read buttons on the notifications</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="card">
+            <h2>Notifications</h2>
+            <div id="notifications-container"></div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    let stompClient = null;
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const connectionStatus = document.getElementById('connection-status');
+    const walletAddressInput = document.getElementById('wallet-address');
+    const senderAddressInput = document.getElementById('sender-address');
+    const receiverAddressInput = document.getElementById('receiver-address');
+    const chamaAddressInput = document.getElementById('chama-address');
+    const sendInvitationBtn = document.getElementById('send-invitation-btn');
+    const notificationsContainer = document.getElementById('notifications-container');
+
+    // Connect to WebSocket
+    function connect() {
+        const walletAddress = walletAddressInput.value.trim();
+        if (!walletAddress) {
+            alert('Please enter a wallet address');
+            return;
+        }
+
+        localStorage.setItem('walletAddress', walletAddress);
+
+        // Create connection
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Connected to WebSocket: ' + frame);
+            connectionStatus.classList.remove('disconnected');
+            connectionStatus.classList.add('connected');
+            connectionStatus.textContent = 'Connected as: ' + walletAddress;
+
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+
+            // Subscribe to personal notifications queue
+            stompClient.subscribe('/user/queue/v1/notifications', function(message) {
+                const notification = JSON.parse(message.body);
+                console.log('Received notification:', notification);
+                showNotification(notification);
+            });
+
+            // Also subscribe to topic (optional)
+            stompClient.subscribe('/topic/v1/notifications.' + walletAddress, function(message) {
+                const notification = JSON.parse(message.body);
+                console.log('Received topic notification:', notification);
+                showNotification(notification);
+            });
+
+            // Load existing notifications
+            loadNotifications(walletAddress);
+        }, function(error) {
+            console.error('WebSocket connection error:', error);
+            connectionStatus.classList.remove('connected');
+            connectionStatus.classList.add('disconnected');
+            connectionStatus.textContent = 'Connection failed: ' + error;
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+            stompClient = null;
+
+            connectionStatus.classList.remove('connected');
+            connectionStatus.classList.add('disconnected');
+            connectionStatus.textContent = 'Disconnected';
+
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+        }
+    }
+
+    function loadNotifications(walletAddress) {
+        fetch(`/api/v1/notifications/${walletAddress}`)
+            .then(response => response.json())
+            .then(notifications => {
+                notificationsContainer.innerHTML = '';
+                notifications.forEach(notification => {
+                    showNotification(notification);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+            });
+    }
+    function showNotification(notification) {
+        console.log("Processing notification:", notification);
+        console.log("Type:", notification.type);
+        console.log("Read status:", notification.read);
+
+        const element = document.createElement('div');
+        element.className = 'notification' + (notification.read ? '' : ' unread');
+
+        // Force buttons to appear for debugging
+        const showButtons = true; // Set to true to force buttons to appear
+
+        let actionButtonsHtml = '';
+        if (!notification.read && notification.type === 'CHAMA_INVITATION') {
+            console.log("Should show buttons for notification:", notification.id);
+            actionButtonsHtml = `
+            <div style="margin-top: 10px;">
+                <button onclick="acceptInvitation(${notification.id})" style="background-color: #28a745;">Accept</button>
+                <button onclick="rejectInvitation(${notification.id})" style="background-color: #dc3545;">Reject</button>
+                <button onclick="markAsRead(${notification.id})">Mark as Read</button>
+            </div>
+        `;
+        } else {
+            console.log("Not showing buttons. Read:", notification.read, "Type:", notification.type);
+            actionButtonsHtml = `<small>(${notification.read ? 'Already processed' : 'No action needed'})</small>`;
+        }
+
+        // Build full notification HTML
+        element.innerHTML = `
+        <div style="margin-bottom: 5px;">
+            <h3>${notification.type || 'Notification'}</h3>
+            <p>${notification.message || 'No message content'}</p>
+            <small>From: ${notification.senderWalletAddress || 'Unknown'}</small><br>
+            <small>Chama: ${notification.chamaWalletAddress || 'Unknown'}</small>
+        </div>
+        ${actionButtonsHtml}
+    `;
+        notificationsContainer.prepend(element);
+
+        // Log the actual HTML that was added
+        console.log("Added HTML:", element.outerHTML);
+    }
+    function sendInvitation() {
+        const sender = senderAddressInput.value.trim();
+        const receiver = receiverAddressInput.value.trim();
+        const chama = chamaAddressInput.value.trim();
+
+        if (!sender || !receiver || !chama) {
+            alert('Please fill all address fields');
+            return;
+        }
+
+        fetch(`/api/v1/notifications/invite?senderWalletAddress=${sender}&receiverWalletAddress=${receiver}&chamaWalletAddress=${chama}`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(notification => {
+                console.log('Invitation sent:', notification);
+                alert('Invitation sent successfully!');
+            })
+            .catch(error => {
+                console.error('Error sending invitation:', error);
+                alert('Error sending invitation: ' + error);
+            });
+    }
+
+    function acceptInvitation(notificationId) {
+        fetch(`/api/v1/notifications/${notificationId}/accept`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(chama => {
+                console.log('Invitation accepted:', chama);
+                alert('Invitation accepted successfully!');
+                loadNotifications(walletAddressInput.value.trim());
+            })
+            .catch(error => {
+                console.error('Error accepting invitation:', error);
+                alert('Error accepting invitation: ' + error);
+            });
+    }
+
+    function rejectInvitation(notificationId) {
+        fetch(`/api/v1/notifications/${notificationId}/reject`, {
+            method: 'POST'
+        })
+            .then(() => {
+                console.log('Invitation rejected');
+                alert('Invitation rejected successfully!');
+                loadNotifications(walletAddressInput.value.trim());
+            })
+            .catch(error => {
+                console.error('Error rejecting invitation:', error);
+                alert('Error rejecting invitation: ' + error);
+            });
+    }
+
+    function markAsRead(notificationId) {
+        fetch(`/api/v1/notifications/${notificationId}/read`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(notification => {
+                console.log('Marked as read:', notification);
+                loadNotifications(walletAddressInput.value.trim());
+            })
+            .catch(error => {
+                console.error('Error marking as read:', error);
+                alert('Error marking as read: ' + error);
+            });
+    }
+
+    // Set up event listeners
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+    sendInvitationBtn.addEventListener('click', sendInvitation);
+
+    // Initialize if wallet address is stored
+    window.onload = function() {
+        const savedWalletAddress = localStorage.getItem('walletAddress');
+        if (savedWalletAddress) {
+            walletAddressInput.value = savedWalletAddress;
+        }
+    };
+
+    // Make functions available globally
+    window.acceptInvitation = acceptInvitation;
+    window.rejectInvitation = rejectInvitation;
+    window.markAsRead = markAsRead;
+</script>
+</body>
+</html>
