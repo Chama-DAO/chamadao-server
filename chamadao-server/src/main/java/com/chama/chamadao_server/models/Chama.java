@@ -28,10 +28,10 @@ public class Chama {
 
     private String description;
 
-    // Creator of the Chama - commented out as per requirements
-    // @ManyToOne(fetch = FetchType.EAGER)
-    // @JoinColumn(name = "creator_wallet_address", referencedColumnName = "walletAddress")
-    // private User creator;
+     //Creator of the Chama - commented out as per requirements
+     @ManyToOne(fetch = FetchType.EAGER)
+     @JoinColumn(name = "creator_wallet_address", referencedColumnName = "walletAddress")
+    private User creator;
 
     // List of chama members
     @JsonManagedReference
