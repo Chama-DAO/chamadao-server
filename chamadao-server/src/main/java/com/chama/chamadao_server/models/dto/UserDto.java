@@ -25,9 +25,9 @@ public class UserDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-/*
-    Reference to the Chama the user belongs to
+
+    //Reference to the Chama the user belongs to
     private String chamaWalletAddress;
     private String chamaName;
-*/
+
 }
