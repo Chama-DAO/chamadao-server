@@ -1,7 +1,5 @@
 package com.chama.chamadao_server.controllers;
 
-import com.chama.chamadao_server.mappers.ChamaMapper;
-import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.Notification;
 import com.chama.chamadao_server.models.dto.ChamaDto;
 import com.chama.chamadao_server.services.ChamaService;
@@ -21,7 +19,7 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final ChamaService chamaService;
-    private final ChamaMapper chamaMapper;
+    //private final ChamaMapper chamaMapper;
 
     @GetMapping("/{walletAddress}")
     ResponseEntity<List<Notification>> getUserNotifications(@PathVariable String walletAddress){
@@ -64,11 +62,11 @@ public class NotificationController {
     public ResponseEntity<ChamaDto> acceptChamaInvitation(@PathVariable Long notificationId) {
         Notification notification = notificationService.markAsRead(notificationId);
 
-        Chama chama = chamaService.addMemberToChama(
+        ChamaDto chama = chamaService.addMemberToChama(
                 notification.getChamaWalletAddress(),
                 notification.getReceiverWalletAddress()
         );
-        return ResponseEntity.ok(chamaMapper.toDto(chama));
+        return ResponseEntity.ok(chama);
     }
     @PostMapping("/{notificationId}/reject")
     public ResponseEntity<Void> rejectChamaInvitation(@PathVariable Long notificationId) {
