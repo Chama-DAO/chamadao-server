@@ -91,7 +91,7 @@ public class ChamaService {
         // Save the Chama
         Chama savedChama = chamaRepository.save(chama);
 
-        log.info("Chama created successfully: {}", savedChama.getWalletAddress());
+        log.info("Chama created successfully: {}", savedChama.getChamaAddress());
 
         return chamaMapper.toDto(savedChama);
     }
@@ -115,7 +115,7 @@ public class ChamaService {
                 .orElseThrow(() -> new RuntimeException("User not found with wallet address: " + userWalletAddress));
 
         // Check if user is already a member of this Chama
-        if (user.getChama() != null && user.getChama().getWalletAddress().equals(chamaWalletAddress)) {
+        if (user.getChama() != null && user.getChama().getChamaAddress().equals(chamaWalletAddress)) {
             throw new RuntimeException("User is already a member of this Chama");
         }
 
@@ -159,14 +159,14 @@ public class ChamaService {
                 .orElseThrow(() -> new RuntimeException("User not found with wallet address: " + userWalletAddress));
 
         // Check if user is a member of this Chama
-        if (user.getChama() == null || !user.getChama().getWalletAddress().equals(chamaWalletAddress)) {
+        if (user.getChama() == null || !user.getChama().getChamaAddress().equals(chamaWalletAddress)) {
             throw new RuntimeException("User is not a member of this Chama");
         }
 
-        // Check if user is the creator of the Chama - commented out as per requirements
-        // if (chama.getCreator() != null && chama.getCreator().getWalletAddress().equals(userWalletAddress)) {
-        //     throw new RuntimeException("Cannot remove the creator of the Chama");
-        // }
+        // Check if user is the creator of the Chama
+         if (chama.getCreator() != null && chama.getCreator().getWalletAddress().equals(userWalletAddress)) {
+             throw new RuntimeException("Cannot remove the creator of the Chama");
+         }
 
         // Remove user from chama using the helper method
         chama.removeMember(user);
@@ -267,7 +267,7 @@ public class ChamaService {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Update Chama entity with image URL
-            chama.setChamaProfileImageUrl(newFilename);
+            chama.setProfileImage(newFilename);
             chamaRepository.save(chama);
 
             log.info("Successfully uploaded image for Chama {}: {}", chamaWalletAddress, newFilename);
