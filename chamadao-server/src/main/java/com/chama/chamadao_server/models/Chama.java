@@ -95,12 +95,12 @@ public class Chama {
     // Helper method to add a member
     public void addMember(User user) {
         members.add(user);
-        user.setChama(this);
+        user.getMemberChamas().add(this);
     }
 
     // Helper method to remove a member
     public void removeMember(User user) {
         members.remove(user);
-        user.setChama(null);
+        user.getMemberChamas().remove(this);
     }
 }
