@@ -23,6 +23,5 @@ public interface UserMapper {
      * @return The converted User entity
      */
     @Mapping(target = "reputationScore", ignore = true)
-    @Mapping(target = "chama", ignore = true) // Chama relationship is managed by ChamaService
     User toEntity(UserDto userDto);
 }
