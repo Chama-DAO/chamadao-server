@@ -24,7 +24,7 @@ import java.util.List;
  * Controller for managing KYC (Know Your Customer) documents and verification
  */
 @RestController
-@RequestMapping("/api/users/{walletAddress}/kyc")
+@RequestMapping("/api/v1/users/{walletAddress}/kyc")
 @RequiredArgsConstructor
 @Tag(name = "KYC Management", description = "APIs for managing KYC (Know Your Customer) documents and verification")
 public class KycController {

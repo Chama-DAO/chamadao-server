@@ -24,7 +24,7 @@ import jakarta.validation.Valid;
  * and the server only manages profiles after account creation.
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "User Management", description = "APIs for managing user profiles")
 public class UserController {

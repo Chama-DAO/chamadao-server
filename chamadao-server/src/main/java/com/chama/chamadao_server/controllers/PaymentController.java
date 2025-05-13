@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  * Handles deposits and withdrawals using M-Pesa
  */
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Payment Operations", description = "APIs for handling deposits and withdrawals using M-Pesa")
