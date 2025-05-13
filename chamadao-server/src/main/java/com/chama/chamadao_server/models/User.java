@@ -39,7 +39,7 @@ public class User {
 
 
     // Chamas created by this user
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "creatorAddress", fetch = FetchType.LAZY)
     private List<Chama> createdChamas = new ArrayList<>();
     
     // Chamas where this user is a member
