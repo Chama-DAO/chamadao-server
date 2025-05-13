@@ -1,5 +1,6 @@
 package com.chama.chamadao_server.services;
 
+import com.chama.chamadao_server.exceptions.ChamaException;
 import com.chama.chamadao_server.mappers.ChamaMapper;
 import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.User;
@@ -64,11 +65,11 @@ public class ChamaService {
     @Transactional
     public ChamaDto createChama(ChamaDto chamaDto, String creatorWalletAddress) {
         log.info("Creating new Chama with wallet address: {}", 
-                chamaDto.getWalletAddress());
+                chamaDto.getChamaAddress());
 
         // Check if the chama already exists
-        if (chamaRepository.findById(chamaDto.getWalletAddress()).isPresent()) {
-            throw new RuntimeException("Chama already exists with wallet address: " + chamaDto.getWalletAddress());
+        if (chamaRepository.findById(chamaDto.getChamaAddress()).isPresent()) {
+            throw new RuntimeException("Chama already exists with wallet address: " + chamaDto.getChamaAddress());
         }
 
         User creator = userRepository.findByWalletAddress(creatorWalletAddress)
@@ -80,13 +81,9 @@ public class ChamaService {
         // Convert DTO to entity
         Chama chama = chamaMapper.toEntity(chamaDto);
 
-        chama.setCreator(creator);
+        chama.setCreatorAddress(creatorWalletAddress);
 
         chama.addMember(creator);
-
-        // if (!creator.hasRole(UserRole.CHAMA_ADMIN)) {
-        //     creator.addRole(UserRole.CHAMA_ADMIN);
-        // }
 
         // Save the Chama
         Chama savedChama = chamaRepository.save(chama);
@@ -103,21 +100,27 @@ public class ChamaService {
      * @return The updated Chama
      */
     @Transactional
-    public Chama addMemberToChama(String chamaWalletAddress, String userWalletAddress) {
+    public ChamaDto addMemberToChama(String chamaWalletAddress, String userWalletAddress) {
         log.info("Adding member {} to Chama {}", userWalletAddress, chamaWalletAddress);
 
         // Get the Chama
         Chama chama = chamaRepository.findById(chamaWalletAddress)
-                .orElseThrow(() -> new RuntimeException("Chama not found with wallet address: " + chamaWalletAddress));
+                .orElseThrow(() -> new ChamaException("Chama not found with wallet address: " + chamaWalletAddress));
 
         // Get the User
         User user = userRepository.findByWalletAddress(userWalletAddress)
-                .orElseThrow(() -> new RuntimeException("User not found with wallet address: " + userWalletAddress));
+                .orElseThrow(() -> new ChamaException("User not found with wallet address: " + userWalletAddress));
 
         // Check if user is already a member of this Chama
         if (user.getMemberChamas().stream()
                 .anyMatch(memberChama -> memberChama.getChamaAddress().equals(chamaWalletAddress))) {
-            throw new RuntimeException("User is already a member of this Chama");
+            throw new ChamaException("User is already a member of this Chama");
+        }
+
+        // Check if chama is at maximum capacity
+        if (chama.getMaximumMembers() != null && 
+            chama.getMembers().size() >= chama.getMaximumMembers()) {
+            throw new ChamaException("Chama has reached maximum member capacity");
         }
 
         // Add user to chama using the helper method
@@ -128,7 +131,7 @@ public class ChamaService {
 
         log.info("Member added successfully to Chama {}", chamaWalletAddress);
 
-        return updatedChama;
+        return chamaMapper.toDto(updatedChama);
     }
 
     /**
@@ -154,12 +157,12 @@ public class ChamaService {
                 .anyMatch(memberChama -> memberChama.getChamaAddress().equals(chamaWalletAddress));
         
         if (!isMember) {
-            throw new RuntimeException("User is not a member of this Chama");
+            throw new ChamaException("User is not a member of this Chama");
         }
 
         // Check if user is the creator of the Chama
-        if (chama.getCreator() != null && chama.getCreator().getWalletAddress().equals(userWalletAddress)) {
-            throw new RuntimeException("Creator cannot be removed from the Chama");
+        if (chama.getCreatorAddress() != null && chama.getCreatorAddress().equals(userWalletAddress)) {
+            throw new ChamaException("Creator cannot be removed from the Chama");
         }
 
         // Remove user from chama using the helper method
