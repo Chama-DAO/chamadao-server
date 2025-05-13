@@ -23,26 +23,30 @@ import java.util.List;
 @Table(name = "chamas")
 public class Chama {
     @Id
-    private String chamaAddress; // blockchain address of the chama
+    private String chamaAddress; 
     
     // Chama Details
-    private String chamaId; // unique 8 digit identifier
+    private String chamaId;
     private String name;
     private String description;
     private String location;
     private String profileImage;
     
+    //creator of the chama
+    @ManyToOne
+    @JoinColumn(name = "creator_wallet_address", referencedColumnName = "walletAddress")
+    private User creator;
     // Membership Details
     private Integer maximumMembers;
     private Boolean registrationFeeRequired;
     private BigDecimal registrationFeeAmount;
     private String registrationFeeCurrency;
-    private String payoutPeriod; // daily, weekly, monthly, yearly
-    private Integer payoutPercentageAmount; // percentage
+    private String payoutPeriod;
+    private Integer payoutPercentageAmount;
     
     // Contributions Details
     private BigDecimal contributionAmount;
-    private String contributionPeriod; // daily, weekly, monthly, yearly
+    private String contributionPeriod; 
     private BigDecimal contributionPenalty;
     private Integer penaltyExpirationPeriod;
     
@@ -52,7 +56,7 @@ public class Chama {
     private String loanTerm;
     private BigDecimal loanPenalty;
     private Integer loanPenaltyExpirationPeriod;
-    private Integer minContributionRatio; // min contributions to be eligible for loans
+    private Integer minContributionRatio;
     
     // Metrics
     private BigDecimal totalContributions;
@@ -87,4 +91,16 @@ public class Chama {
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    // Helper method to add a member
+    public void addMember(User user) {
+        members.add(user);
+        user.setChama(this);
+    }
+
+    // Helper method to remove a member
+    public void removeMember(User user) {
+        members.remove(user);
+        user.setChama(null);
+    }
 }
