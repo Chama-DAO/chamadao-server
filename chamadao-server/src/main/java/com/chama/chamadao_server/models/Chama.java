@@ -23,20 +23,17 @@ import java.util.List;
 @Table(name = "chamas")
 public class Chama {
     @Id
-    private String chamaAddress; 
+    private String chamaAddress;
     
-    // Chama Details
     private String chamaId;
     private String name;
     private String description;
     private String location;
     private String profileImage;
     
-    //creator of the chama
-    @ManyToOne
-    @JoinColumn(name = "creator_wallet_address", referencedColumnName = "walletAddress")
-    private User creator;
-    // Membership Details
+    // Store creator as string wallet address
+    private String creatorAddress;
+    
     private Integer maximumMembers;
     private Boolean registrationFeeRequired;
     private BigDecimal registrationFeeAmount;
@@ -44,13 +41,11 @@ public class Chama {
     private String payoutPeriod;
     private Integer payoutPercentageAmount;
     
-    // Contributions Details
     private BigDecimal contributionAmount;
     private String contributionPeriod; 
     private BigDecimal contributionPenalty;
     private Integer penaltyExpirationPeriod;
     
-    // Loans Policy Details
     private BigDecimal maximumLoanAmount;
     private BigDecimal loanInterestRate;
     private String loanTerm;
@@ -58,16 +53,14 @@ public class Chama {
     private Integer loanPenaltyExpirationPeriod;
     private Integer minContributionRatio;
     
-    // Metrics
     private BigDecimal totalContributions;
     private BigDecimal totalPayouts;
     private BigDecimal totalLoans;
     private BigDecimal totalLoanRepayments;
     private BigDecimal totalLoanPenalties;
     
-    // Relationships
-    @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Loan> loans = new ArrayList<>();
+    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Loan> loans = new ArrayList<>();
     
     @ManyToMany
     @JoinTable(
@@ -77,30 +70,24 @@ public class Chama {
     )
     private List<User> members = new ArrayList<>();
     
-    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<Contribution> contributions = new ArrayList<>();
-    
-    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<Payout> payouts = new ArrayList<>();
-    
-    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<Penalty> penalties = new ArrayList<>();
-    
     @CreatedDate
     private LocalDateTime dateCreated;
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
-    // Helper method to add a member
+    
+    // Helper methods
     public void addMember(User user) {
-        members.add(user);
-        user.getMemberChamas().add(this);
+        if (!members.contains(user)) {
+            members.add(user);
+            user.getMemberChamas().add(this);
+        }
     }
-
-    // Helper method to remove a member
+    
     public void removeMember(User user) {
-        members.remove(user);
-        user.getMemberChamas().remove(this);
+        if (members.contains(user)) {
+            members.remove(user);
+            user.getMemberChamas().remove(this);
+        }
     }
 }
