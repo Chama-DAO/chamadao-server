@@ -183,6 +183,176 @@ GET /api/users/0x1234567890123456789012345678901234567890
 6. Send the request
 7. Verify the response matches the expected format
 
+// ... existing content ...
+
+## Chama Endpoints
+
+### 1. Create a Chama
+
+**Endpoint:** `POST /api/chamas`
+
+**Description:** Create a new Chama with the specified creator wallet address.
+
+**Request Parameters:**
+- `creatorWalletAddress` (query parameter): The wallet address of the user creating the Chama
+
+**Request Body:**
+```json
+{
+  "chamaAddress": "0xa5cc7f7c9c40a5dbf7893a7cec19bc595fb6900b5950e82cd298d8f466d4aee4",
+  "chamaId": "89681566",
+  "name": "Demo Chama",
+  "description": "Demo Chama",
+  "location": "Eldoret",
+  "profileImage": "",
+  "maximumMembers": 20,
+  "registrationFeeRequired": true,
+  "registrationFeeAmount": 200,
+  "registrationFeeCurrency": "KES",
+  "payoutPeriod": "yearly",
+  "payoutPercentageAmount": 80,
+  "contributionAmount": 200,
+  "contributionPeriod": "monthly",
+  "contributionPenalty": 200,
+  "penaltyExpirationPeriod": 0,
+  "maximumLoanAmount": 2000,
+  "loanInterestRate": 10,
+  "loanTerm": "monthly",
+  "loanPenalty": 10,
+  "loanPenaltyExpirationPeriod": 0,
+  "minContributionRatio": 5
+}
+```
+**Example Response**
+```json
+{
+  "chamaAddress": "0xa5cc7f7c9c40a5dbf7893a7cec19bc595fb6900b5950e82cd298d8f466d4aee4",
+  "chamaId": "89681566",
+  "name": "Demo Chama",
+  "description": "Demo Chama",
+  "location": "Eldoret",
+  "profileImage": "",
+  "creator": "0x1234567890123456789012345678901234567890",
+  "maximumMembers": 20,
+  "registrationFeeRequired": true,
+  "registrationFeeAmount": 200,
+  "registrationFeeCurrency": "KES",
+  "payoutPeriod": "yearly",
+  "payoutPercentageAmount": 80,
+  "contributionAmount": 200,
+  "contributionPeriod": "monthly",
+  "contributionPenalty": 200,
+  "penaltyExpirationPeriod": 0,
+  "maximumLoanAmount": 2000,
+  "loanInterestRate": 10,
+  "loanTerm": "monthly",
+  "loanPenalty": 10,
+  "loanPenaltyExpirationPeriod": 0,
+  "minContributionRatio": 5,
+  "totalContributions": 0,
+  "totalPayouts": 0,
+  "totalLoans": 0,
+  "totalLoanRepayments": 0,
+  "totalLoanPenalties": 0,
+  "members": ["0x1234567890123456789012345678901234567890"],
+  "loans": [],
+  "contributions": [],
+  "payouts": [],
+  "penalties": [],
+  "dateCreated": "2025-05-13T09:45:27.454Z",
+  "updatedAt": "2025-05-13T09:45:27.454Z"
+}
+```
+
+**Endpoint:** `GET /api/chamas/{chamaWalletAddress}`
+GET /api/chamas/0xa5cc7f7c9c40a5dbf7893a7cec19bc595fb6900b5950e82cd298d8f466d4aee4
+
+**Example Json Response**
+```json
+{
+  "chamaAddress": "0xa5cc7f7c9c40a5dbf7893a7cec19bc595fb6900b5950e82cd298d8f466d4aee4",
+  "chamaId": "89681566",
+  "name": "Demo Chama",
+  "description": "Demo Chama",
+  "location": "Eldoret",
+  "profileImage": "",
+  "creator": "0x1234567890123456789012345678901234567890",
+  "maximumMembers": 20,
+  "registrationFeeRequired": true,
+  "registrationFeeAmount": 200,
+  "registrationFeeCurrency": "KES",
+  "payoutPeriod": "yearly",
+  "payoutPercentageAmount": 80,
+  "contributionAmount": 200,
+  "contributionPeriod": "monthly",
+  "contributionPenalty": 200,
+  "penaltyExpirationPeriod": 0,
+  "maximumLoanAmount": 2000,
+  "loanInterestRate": 10,
+  "loanTerm": "monthly",
+  "loanPenalty": 10,
+  "loanPenaltyExpirationPeriod": 0,
+  "minContributionRatio": 5,
+  "totalContributions": 0,
+  "totalPayouts": 0,
+  "totalLoans": 0,
+  "totalLoanRepayments": 0,
+  "totalLoanPenalties": 0,
+  "members": ["0x1234567890123456789012345678901234567890"],
+  "loans": [],
+  "contributions": [],
+  "payouts": [],
+  "penalties": [],
+  "dateCreated": "2025-05-13T09:45:27.454Z",
+  "updatedAt": "2025-05-13T09:45:27.454Z"
+}
+```
+
+**Get All Chamas**
+**Endpoint:** `GET/api/chamas`
+**Example Response**
+```json
+[
+  {
+    "chamaAddress": "0xa5cc7f7c9c40a5dbf7893a7cec19bc595fb6900b5950e82cd298d8f466d4aee4",
+    "chamaId": "89681566",
+    "name": "Demo Chama",
+    "description": "Demo Chama",
+    "location": "Eldoret",
+    "profileImage": "",
+    "creator": "0x1234567890123456789012345678901234567890",
+    "maximumMembers": 20,
+    "registrationFeeRequired": true,
+    "registrationFeeAmount": 200,
+    "registrationFeeCurrency": "KES",
+    "payoutPeriod": "yearly",
+    "payoutPercentageAmount": 80,
+    "contributionAmount": 200,
+    "contributionPeriod": "monthly",
+    "contributionPenalty": 200,
+    "penaltyExpirationPeriod": 0,
+    "maximumLoanAmount": 2000,
+    "loanInterestRate": 10,
+    "loanTerm": "monthly",
+    "loanPenalty": 10,
+    "loanPenaltyExpirationPeriod": 0,
+    "minContributionRatio": 5,
+    "totalContributions": 0,
+    "totalPayouts": 0,
+    "totalLoans": 0,
+    "totalLoanRepayments": 0,
+    "totalLoanPenalties": 0,
+    "members": ["0x1234567890123456789012345678901234567890"],
+    "loans": [],
+    "contributions": [],
+    "payouts": [],
+    "penalties": [],
+    "dateCreated": "2025-05-13T09:45:27.454Z",
+    "updatedAt": "2025-05-13T09:45:27.454Z"
+  }
+]
+```
+
 ### 2. Get KYC Documents
 
 **Endpoint:** `GET /api/users/{walletAddress}/kyc/documents`
