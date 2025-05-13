@@ -25,7 +25,7 @@ public class ChamaDto {
     private String profileImage;
     
     // Creator is just the wallet address
-    private String creator;
+    private String creatorAddress;
     
     private Integer maximumMembers;
     private Boolean registrationFeeRequired;
