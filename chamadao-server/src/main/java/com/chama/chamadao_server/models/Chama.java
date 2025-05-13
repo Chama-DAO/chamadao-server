@@ -1,6 +1,5 @@
 package com.chama.chamadao_server.models;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,58 +9,82 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "chamas")
 public class Chama {
     @Id
-    private String walletAddress;
-
+    private String chamaAddress; // blockchain address of the chama
+    
+    // Chama Details
+    private String chamaId; // unique 8 digit identifier
     private String name;
-
     private String description;
-
-     //Creator of the Chama - commented out as per requirements
-     @ManyToOne(fetch = FetchType.EAGER)
-     @JoinColumn(name = "creator_wallet_address", referencedColumnName = "walletAddress")
-    private User creator;
-
-    // List of chama members
-    @JsonManagedReference
-    @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, orphanRemoval = false)
+    private String location;
+    private String profileImage;
+    
+    // Membership Details
+    private Integer maximumMembers;
+    private Boolean registrationFeeRequired;
+    private BigDecimal registrationFeeAmount;
+    private String registrationFeeCurrency;
+    private String payoutPeriod; // daily, weekly, monthly, yearly
+    private Integer payoutPercentageAmount; // percentage
+    
+    // Contributions Details
+    private BigDecimal contributionAmount;
+    private String contributionPeriod; // daily, weekly, monthly, yearly
+    private BigDecimal contributionPenalty;
+    private Integer penaltyExpirationPeriod;
+    
+    // Loans Policy Details
+    private BigDecimal maximumLoanAmount;
+    private BigDecimal loanInterestRate;
+    private String loanTerm;
+    private BigDecimal loanPenalty;
+    private Integer loanPenaltyExpirationPeriod;
+    private Integer minContributionRatio; // min contributions to be eligible for loans
+    
+    // Metrics
+    private BigDecimal totalContributions;
+    private BigDecimal totalPayouts;
+    private BigDecimal totalLoans;
+    private BigDecimal totalLoanRepayments;
+    private BigDecimal totalLoanPenalties;
+    
+    // Relationships
+    @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Loan> loans = new ArrayList<>();
+    
+    @ManyToMany
+    @JoinTable(
+        name = "chama_members",
+        joinColumns = @JoinColumn(name = "chama_wallet_address"),
+        inverseJoinColumns = @JoinColumn(name = "member_wallet_address")
+    )
     private List<User> members = new ArrayList<>();
-    private Long contributionAmount;
-    private Long contributionPeriod;
-    private int maximumMembers;
-    private Long maximumLoanAmount;
-    private int loanPaymentPeriod;
-    private Long loanPenaltyAmount;
-    private Long registrationFee;
-    private String chamaProfileImageUrl;
-
-    // Timestamps
+    
+    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Contribution> contributions = new ArrayList<>();
+    
+    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Payout> payouts = new ArrayList<>();
+    
+    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Penalty> penalties = new ArrayList<>();
+    
     @CreatedDate
-    private LocalDate createdAt;
-
+    private LocalDateTime dateCreated;
+    
     @LastModifiedDate
-    private LocalDate updatedAt;
-
-    // Helper method to add a member
-    public void addMember(User user) {
-        members.add(user);
-        user.setChama(this);
-    }
-
-    // Helper method to remove a member
-    public void removeMember(User user) {
-        members.remove(user);
-        user.setChama(null);
-    }
+    private LocalDateTime updatedAt;
 }
