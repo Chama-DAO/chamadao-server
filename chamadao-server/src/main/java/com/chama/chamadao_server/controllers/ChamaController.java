@@ -1,6 +1,5 @@
 package com.chama.chamadao_server.controllers;
 
-import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.dto.ChamaDto;
 import com.chama.chamadao_server.services.ChamaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,8 +82,8 @@ public class ChamaController {
             @RequestParam String creatorWalletAddress
             ) {
         log.info("Request to create Chama with wallet address: {}", 
-                chamaDto.getWalletAddress());
-        ChamaDto createdChama = chamaService.createChama(chamaDto, creatorWalletAddress); // Passing null as creator wallet address
+                chamaDto.getChamaAddress());
+        ChamaDto createdChama = chamaService.createChama(chamaDto, creatorWalletAddress); 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdChama);
     }
 
@@ -102,13 +101,13 @@ public class ChamaController {
             @ApiResponse(responseCode = "400", description = "User is already a member of this or another Chama", content = @Content)
     })
     @PostMapping("/{chamaWalletAddress}/members/{userWalletAddress}")
-    public ResponseEntity<Chama> addMemberToChama(
+    public ResponseEntity<ChamaDto> addMemberToChama(
             @Parameter(description = "Wallet address of the Chama", required = true)
             @PathVariable String chamaWalletAddress,
             @Parameter(description = "Wallet address of the user to add", required = true)
             @PathVariable String userWalletAddress) {
         log.info("Request to add member {} to Chama {}", userWalletAddress, chamaWalletAddress);
-        Chama updatedChama = chamaService.addMemberToChama(chamaWalletAddress, userWalletAddress);
+        ChamaDto updatedChama = chamaService.addMemberToChama(chamaWalletAddress, userWalletAddress);
         return ResponseEntity.ok(updatedChama);
     }
 
