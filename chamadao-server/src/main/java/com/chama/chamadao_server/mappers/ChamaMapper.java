@@ -20,7 +20,7 @@ public interface ChamaMapper {
      * @return The converted ChamaDto
      */
     // @Mapping(target = "creatorWalletAddress", expression = "java(chama.getCreator() != null ? chama.getCreator().getWalletAddress() : null)") // Commented out as per requirements
-    @Mapping(target = "memberWalletAddresses", expression = "java(getMemberWalletAddresses(chama))")
+    @Mapping(target = "members", source = "members", qualifiedByName = "mapMembers")
     ChamaDto toDto(Chama chama);
 
     /**
@@ -37,11 +37,12 @@ public interface ChamaMapper {
      * @param chama The Chama entity containing the members
      * @return A list of wallet addresses
      */
-    default List<String> getMemberWalletAddresses(Chama chama) {
-        if (chama.getMembers() == null) {
+    @Named("mapMembers")
+    default List<String> mapMembers(List<User> members) {
+        if (members == null) {
             return List.of();
         }
-        return chama.getMembers().stream()
+        return members.stream()
                 .map(User::getWalletAddress)
                 .collect(Collectors.toList());
     }
