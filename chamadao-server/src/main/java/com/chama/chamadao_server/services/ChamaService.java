@@ -4,7 +4,6 @@ import com.chama.chamadao_server.mappers.ChamaMapper;
 import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.User;
 import com.chama.chamadao_server.models.dto.ChamaDto;
-import com.chama.chamadao_server.models.enums.UserRole;
 import com.chama.chamadao_server.repository.ChamaRepository;
 import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
