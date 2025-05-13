@@ -34,7 +34,7 @@ public interface ChamaMapper {
 
     /**
      * Extract wallet addresses from a list of users
-     * @param chama The Chama entity containing the members
+     * @param members The list of users to extract wallet addresses from
      * @return A list of wallet addresses
      */
     @Named("mapMembers")
