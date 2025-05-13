@@ -2,10 +2,8 @@ package com.chama.chamadao_server.mappers;
 
 import com.chama.chamadao_server.models.User;
 import com.chama.chamadao_server.models.dto.UserDto;
-import com.chama.chamadao_server.models.enums.KycStatus;
 import org.mapstruct.*;
 
-import java.util.HashSet;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
