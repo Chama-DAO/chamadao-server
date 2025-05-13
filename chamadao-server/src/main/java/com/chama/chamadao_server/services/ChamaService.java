@@ -184,7 +184,7 @@ public class ChamaService {
             throw new IllegalArgumentException("File is null or empty");
         }
 
-        //get original file name
+        //get the original file name
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isEmpty()){
             throw new IllegalArgumentException("File name is null or empty");
