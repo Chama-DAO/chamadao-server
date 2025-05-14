@@ -8,11 +8,12 @@ import com.chama.chamadao_server.models.dto.ChamaDto;
 import com.chama.chamadao_server.repository.ChamaRepository;
 import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -44,6 +45,7 @@ public class ChamaService {
     public ChamaDto findChamaByWalletAddress(String walletAddress) {
         Chama chama = chamaRepository.findById(walletAddress)
                 .orElseThrow(() -> new RuntimeException("Chama not found with wallet address: " + walletAddress));
+        log.info("Chama found: {}", chama.getChamaAddress());
         return chamaMapper.toDto(chama);
     }
 
@@ -64,32 +66,29 @@ public class ChamaService {
      */
     @Transactional
     public ChamaDto createChama(ChamaDto chamaDto, String creatorWalletAddress) {
-        log.info("Creating new Chama with wallet address: {}", 
-                chamaDto.getChamaAddress());
-
-        // Check if the chama already exists
-        if (chamaRepository.findById(chamaDto.getChamaAddress()).isPresent()) {
-            throw new RuntimeException("Chama already exists with wallet address: " + chamaDto.getChamaAddress());
-        }
-
+        // Find the creator by wallet address
         User creator = userRepository.findByWalletAddress(creatorWalletAddress)
-                .orElseGet(() -> {
-                    User newUser = new User();
-                    newUser.setWalletAddress(creatorWalletAddress);
-                    return userRepository.save(newUser);
-                });
-        // Convert DTO to entity
+                .orElseThrow(() -> new RuntimeException("User not found with wallet address: " + creatorWalletAddress));
+
+        // Map the DTO to entity
         Chama chama = chamaMapper.toEntity(chamaDto);
+        //check if the chama already exists
+        if (chamaRepository.existsById(chama.getChamaAddress())) {
+            throw new ChamaException("Chama already exists with wallet address: " + chama.getChamaAddress());
+        }
+        // Set the creator and add them as first member
+        chama.setCreator(creator);
+        chama.getMembers().add(creator);
 
-        chama.setCreatorAddress(creatorWalletAddress);
-
-        chama.addMember(creator);
-
-        // Save the Chama
+        // Save the chama
         Chama savedChama = chamaRepository.save(chama);
 
-        log.info("Chama created successfully: {}", savedChama.getChamaAddress());
+        // Update the creator's chamas lists
+        creator.getCreatedChamas().add(savedChama);
+        creator.getMemberChamas().add(savedChama);
+        userRepository.save(creator);
 
+        // Map back to DTO and return
         return chamaMapper.toDto(savedChama);
     }
 
@@ -161,7 +160,7 @@ public class ChamaService {
         }
 
         // Check if user is the creator of the Chama
-        if (chama.getCreatorAddress() != null && chama.getCreatorAddress().equals(userWalletAddress)) {
+        if (chama.getCreator() != null && chama.getCreator().getWalletAddress().equals(userWalletAddress)) {
             throw new ChamaException("Creator cannot be removed from the Chama");
         }
 
