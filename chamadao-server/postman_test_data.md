@@ -183,8 +183,6 @@ GET /api/users/0x1234567890123456789012345678901234567890
 6. Send the request
 7. Verify the response matches the expected format
 
-// ... existing content ...
-
 ## Chama Endpoints
 
 ### 1. Create a Chama
