@@ -62,8 +62,8 @@ public class UserController {
             @Parameter(description = "Wallet address of the user", example = "0x1234567890123456789012345678901234567890")
             @PathVariable String walletAddress) {
         try {
-            User user = userService.getUserByWalletAddress(walletAddress);
-            return ResponseEntity.ok(userMapper.toDto(user));
+            UserDto user = userService.getUserByWalletAddress(walletAddress);
+            return ResponseEntity.ok(user);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -106,9 +106,8 @@ public class UserController {
             @Parameter(description = "Updated user information")
             @Valid @RequestBody UserDto userDto) {
         try {
-            User userToUpdate = userMapper.toEntity(userDto);
-            User updatedUser = userService.updateUserProfile(walletAddress, userToUpdate);
-            return ResponseEntity.ok(userMapper.toDto(updatedUser));
+
+            return ResponseEntity.ok(userService.updateUserProfile(walletAddress, userDto));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (RuntimeException e) {
@@ -146,9 +145,8 @@ public class UserController {
             @Parameter(description = "User information to create")
             @Valid @RequestBody UserDto userDto) {
         try {
-            User userToCreate = userMapper.toEntity(userDto);
-            User createdUser = userService.createUserProfile(userToCreate);
-            return ResponseEntity.ok(userMapper.toDto(createdUser));
+            UserDto createdUserDto = userService.createUserProfile(userDto);
+            return ResponseEntity.ok(createdUserDto);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (RuntimeException e) {
