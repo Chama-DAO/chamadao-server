@@ -3,47 +3,44 @@ package com.chama.chamadao_server.mappers;
 import com.chama.chamadao_server.models.Chama;
 import com.chama.chamadao_server.models.User;
 import com.chama.chamadao_server.models.dto.ChamaDto;
+import com.chama.chamadao_server.models.dto.ChamaSummaryDto;
+import com.chama.chamadao_server.models.dto.UserSummaryDto;
 import org.mapstruct.*;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Mapper for converting between Chama entities and ChamaDto objects
- */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        uses = {UserMapper.class})
 public interface ChamaMapper {
 
-    /**
-     * Convert a Chama entity to a ChamaDto
-     * @param chama The Chama entity to convert
-     * @return The converted ChamaDto
-     */
-    // @Mapping(target = "creatorWalletAddress", expression = "java(chama.getCreator() != null ? chama.getCreator().getWalletAddress() : null)") // Commented out as per requirements
-    @Mapping(target = "members", source = "members", qualifiedByName = "mapMembers")
+    @Mapping(target = "creator", source = "creator")
+    @Mapping(target = "members", qualifiedByName = "mapMembers")
     ChamaDto toDto(Chama chama);
 
-    /**
-     * Convert a ChamaDto to a Chama entity
-     * @param chamaDto The ChamaDto to convert
-     * @return The converted Chama entity
-     */
-   // @Mapping(target = "creator", ignore = true)
+    @Mapping(target = "creator", ignore = true)
     @Mapping(target = "members", ignore = true)
     Chama toEntity(ChamaDto chamaDto);
 
-    /**
-     * Extract wallet addresses from a list of users
-     * @param members The list of users to extract wallet addresses from
-     * @return A list of wallet addresses
-     */
+    ChamaSummaryDto toSummaryDto(Chama chama);
+
     @Named("mapMembers")
-    default List<String> mapMembers(List<User> members) {
+    default Set<UserSummaryDto> mapMembers(Set<User> members) {
         if (members == null) {
-            return List.of();
+            return new HashSet<>();
         }
         return members.stream()
-                .map(User::getWalletAddress)
-                .collect(Collectors.toList());
+                .map(user -> UserSummaryDto.builder()
+                        .walletAddress(user.getWalletAddress())
+                        .fullName(user.getFullName())
+                        .profileImage(user.getProfileImage())
+                        .build())
+                .collect(Collectors.toSet());
     }
+
+    // Update existing Chama entity with values from DTO
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateChamaFromDto(ChamaDto chamaDto, @MappingTarget Chama chama);
 }
