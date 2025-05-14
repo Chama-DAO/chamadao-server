@@ -8,5 +8,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * The primary key is walletAddress (String), so findById can be used to find a Chama by wallet address
  */
 public interface ChamaRepository extends JpaRepository<Chama, String> {
-    // No need for findByWalletAddress since walletAddress is the ID and findById already exists
 }
