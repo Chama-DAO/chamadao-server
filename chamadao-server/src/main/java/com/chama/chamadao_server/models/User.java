@@ -1,19 +1,18 @@
 package com.chama.chamadao_server.models;
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Entity
 @Data
@@ -21,6 +20,7 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class User {
 
     @Id
@@ -29,29 +29,42 @@ public class User {
     private String walletAddress;
 
     private String fullName;
-    //private String username;
     private String mobileNumber;
+
     @Email
     private String email;
     private String country;
     private String idNumber;
     private String profileImage;
 
-
     // Chamas created by this user
-    @OneToMany(mappedBy = "creatorAddress", fetch = FetchType.LAZY)
-    private List<Chama> createdChamas = new ArrayList<>();
-    
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<Chama> createdChamas = new HashSet<>();
+
     // Chamas where this user is a member
     @ManyToMany(mappedBy = "members")
-    private List<Chama> memberChamas = new ArrayList<>();
-    
-    
+    @Builder.Default
+    private Set<Chama> memberChamas = new HashSet<>();
+
     private Double reputationScore;
-    //timestamps
+
     @CreatedDate
     private LocalDateTime createdAt;
+
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(walletAddress, user.walletAddress);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(walletAddress);
+    }
 }
