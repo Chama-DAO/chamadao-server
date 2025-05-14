@@ -21,8 +21,6 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("SELECT u FROM User u WHERE u.fullName LIKE %:keyword% OR u.email LIKE %:keyword% OR u.mobileNumber LIKE %:keyword%")
     Page<User> searchUsers(@Param("keyword") String keyword, Pageable pageable);
 
-  //  List<User> findByKycVerified(boolean kycVerified);
-
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
     long countUsersCreatedBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
