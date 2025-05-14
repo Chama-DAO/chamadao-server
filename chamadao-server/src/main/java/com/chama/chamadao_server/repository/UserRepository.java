@@ -26,4 +26,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
     long countUsersCreatedBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.memberChamas WHERE u.walletAddress = :walletAddress")
+    Optional<User> findUserWithChamasByWalletAddress(String walletAddress);
+
 }
