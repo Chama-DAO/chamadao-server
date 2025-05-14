@@ -1,13 +1,13 @@
 package com.chama.chamadao_server.models.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -20,14 +20,15 @@ public class UserDto {
     private String email;
     private String country;
     private String idNumber;
-    // KYC details commented out as per requirements (future feature)
-    // private boolean kycVerified;
+    private String profileImage;
+    private Double reputationScore;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Use DTOs instead of entities for nested objects
+    @Builder.Default
+    private Set<ChamaSummaryDto> createdChamas = new HashSet<>();
 
-    //Reference to the Chama the user belongs to
-    private String chamaWalletAddress;
-    private String chamaName;
-
+    @Builder.Default
+    private Set<ChamaSummaryDto> memberChamas = new HashSet<>();
 }
