@@ -1,17 +1,14 @@
 package com.chama.chamadao_server.services;
 
+import com.chama.chamadao_server.mappers.UserMapper;
 import com.chama.chamadao_server.models.User;
-import com.chama.chamadao_server.models.enums.KycStatus;
-import com.chama.chamadao_server.models.enums.UserRole;
+import com.chama.chamadao_server.models.dto.UserDto;
 import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,128 +17,118 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final WalletService walletService;
+    private final UserMapper userMapper;
 
     /**
-     * Get a user by wallet address, initializing a basic profile if one doesn't exist
-     * This method supports the account abstraction model where user accounts are created
-     * by the mobile app, and the server only manages profiles associated with wallet addresses.
-     * 
-     * @param walletAddress The wallet address to look up
-     * @return The user, either existing or newly initialized
+     * Validates wallet address format
+     * @param walletAddress The wallet address to validate
      * @throws IllegalArgumentException if the wallet address format is invalid
      */
-    public User getUserByWalletAddress(String walletAddress) {
-        log.info("Getting user profile for wallet address: {}", walletAddress);
-
+    private void validateWalletAddress(String walletAddress) {
         if (!walletService.verifyWalletAddress(walletAddress)) {
             log.warn("Invalid wallet address format: {}", walletAddress);
             throw new IllegalArgumentException("Invalid wallet address format");
         }
-
-        return userRepository.findByWalletAddress(walletAddress)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
     /**
-     * Initialize a basic user profile for a new wallet address
-     * This method is called automatically when a wallet address is encountered for the first time,
-     * supporting the account abstraction model where accounts are created by the mobile app.
-     * 
-     * @param walletAddress The wallet address to initialize a profile for
-     * @return The newly created user profile
+     * Get a user by wallet address
+     *
+     * @param walletAddress The wallet address to look up
+     * @return The user DTO
+     * @throws IllegalArgumentException if the wallet address format is invalid
+     * @throws EntityNotFoundException if the user doesn't exist
      */
-    private User initializeUserProfile(String walletAddress) {
-        log.info("Initializing new user profile for wallet address: {}", walletAddress);
+    public UserDto getUserByWalletAddress(String walletAddress) {
+        log.info("Getting user profile for wallet address: {}", walletAddress);
+        validateWalletAddress(walletAddress);
 
-        User newUser = new User();
-        newUser.setWalletAddress(walletAddress);
-        //newUser.setKycStatus(KycStatus.PENDING);
-        newUser.setReputationScore(0.0);
-        // createdAt and updatedAt will be set automatically by JPA auditing
-        //newUser.setRoles(new HashSet<>());
-        //newUser.addRole(UserRole.CHAMA_MEMBER);
+        log.debug("Searching for user with wallet address: {}", walletAddress);
 
-        log.info("Saving new user profile for wallet address: {}", walletAddress);
-        return userRepository.save(newUser);
+        User user = userRepository.findUserWithChamasByWalletAddress(walletAddress)
+                .orElseThrow(() -> {
+                    log.error("User not found with wallet address: {}", walletAddress);
+                    return new EntityNotFoundException("User not found");
+                });
+        return userMapper.toDto(user);
     }
 
     /**
      * Update an existing user profile with new information
-     * This method updates the profile information for a wallet address that already exists in the system.
-     * 
+     *
      * @param walletAddress The wallet address of the user to update
-     * @param updatedUser The updated user information
-     * @return The updated user profile
+     * @param updatedUserDto The updated user information
+     * @return The updated user profile as DTO
      * @throws IllegalArgumentException if the wallet address format is invalid
-     * @throws RuntimeException if the user doesn't exist
+     * @throws EntityNotFoundException if the user doesn't exist
      */
-    public User updateUserProfile(String walletAddress, User updatedUser) {
+    public UserDto updateUserProfile(String walletAddress, UserDto updatedUserDto) {
         log.info("Updating user profile for wallet address: {}", walletAddress);
+        validateWalletAddress(walletAddress);
 
-        User existingUser = getUserByWalletAddress(walletAddress);
+        User existingUser = userRepository.findById(walletAddress)
+                .orElseThrow(() -> {
+                    log.error("User not found with wallet address: {}", walletAddress);
+                    return new EntityNotFoundException("User not found");
+                });
 
         // Update only non-null fields
-        if (updatedUser.getFullName() != null) {
+        if (updatedUserDto.getFullName() != null) {
             log.debug("Updating full name for wallet address: {}", walletAddress);
-            existingUser.setFullName(updatedUser.getFullName());
+            existingUser.setFullName(updatedUserDto.getFullName());
         }
-        if (updatedUser.getMobileNumber() != null) {
+        if (updatedUserDto.getMobileNumber() != null) {
             log.debug("Updating mobile number for wallet address: {}", walletAddress);
-            existingUser.setMobileNumber(updatedUser.getMobileNumber());
+            existingUser.setMobileNumber(updatedUserDto.getMobileNumber());
         }
-        if (updatedUser.getEmail() != null) {
+        if (updatedUserDto.getEmail() != null) {
             log.debug("Updating email for wallet address: {}", walletAddress);
-            existingUser.setEmail(updatedUser.getEmail());
+            existingUser.setEmail(updatedUserDto.getEmail());
         }
-
-        // updatedAt will be set automatically by JPA auditing
+        if (updatedUserDto.getCountry() != null) {
+            log.debug("Updating country for wallet address: {}", walletAddress);
+            existingUser.setCountry(updatedUserDto.getCountry());
+        }
+        if (updatedUserDto.getIdNumber() != null) {
+            log.debug("Updating ID number for wallet address: {}", walletAddress);
+            existingUser.setIdNumber(updatedUserDto.getIdNumber());
+        }
 
         log.info("Saving updated user profile for wallet address: {}", walletAddress);
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+        return userMapper.toDto(savedUser);
     }
 
     /**
-     * Create a new user profile (used for admin purposes or testing)
-     * Note: In normal operation, profiles are initialized automatically when accessed
-     * via getUserByWalletAddress. This method is primarily for administrative use.
-     * 
-     * @param user The user to create
-     * @return The created user profile
+     * Create a new user profile
+     *
+     * @param userDto The user to create
+     * @return The created user profile as DTO
      * @throws IllegalArgumentException if the wallet address format is invalid
      * @throws RuntimeException if the user already exists
      */
-    public User createUserProfile(User user) {
-        log.info("Creating user profile for wallet address: {}", user.getWalletAddress());
-
-        if (!walletService.verifyWalletAddress(user.getWalletAddress())) {
-            log.warn("Invalid wallet address format: {}", user.getWalletAddress());
-            throw new IllegalArgumentException("Invalid wallet address format");
-        }
+    public UserDto createUserProfile(UserDto userDto) {
+        String walletAddress = userDto.getWalletAddress();
+        log.info("Creating user profile for wallet address: {}", walletAddress);
+        validateWalletAddress(walletAddress);
 
         // Check if the user already exists
-        Optional<User> existingUser = userRepository.findByWalletAddress(user.getWalletAddress());
-        if (existingUser.isPresent()) {
-            log.warn("User already exists for wallet address: {}", user.getWalletAddress());
+        if (userRepository.existsById(walletAddress)) {
+            log.warn("User already exists for wallet address: {}", walletAddress);
             throw new RuntimeException("User already exists");
         }
 
-        // Ensure required fields are set
-//        if (user.getKycStatus() == null) {
-//            log.debug("Setting default KYC status for wallet address: {}", user.getWalletAddress());
-//            user.setKycStatus(KycStatus.PENDING);
-//        }
-        if (user.getReputationScore() == null) {
-            log.debug("Setting default reputation score for wallet address: {}", user.getWalletAddress());
-            user.setReputationScore(0.0);
-        }
-        // createdAt and updatedAt will be set automatically by JPA auditing
-//        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-//            log.debug("Setting default role for wallet address: {}", user.getWalletAddress());
-//            user.setRoles(new HashSet<>());
-//            user.addRole(UserRole.CHAMA_MEMBER);
-//        }
+        // Convert DTO to entity
+        User newUser = userMapper.toEntity(userDto);
 
-        log.info("Saving new user profile for wallet address: {}", user.getWalletAddress());
-        return userRepository.save(user);
+        // Set default reputation score if not provided
+        if (newUser.getReputationScore() == null) {
+            log.debug("Setting default reputation score for wallet address: {}", walletAddress);
+            newUser.setReputationScore(0.0);
+        }
+
+        log.info("Saving new user profile for wallet address: {}", walletAddress);
+        User savedUser = userRepository.save(newUser);
+        return userMapper.toDto(savedUser);
     }
 }
