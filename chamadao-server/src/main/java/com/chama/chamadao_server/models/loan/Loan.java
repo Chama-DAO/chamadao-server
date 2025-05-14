@@ -28,17 +28,17 @@ public class Loan {
     private Long id;
 
     // Relationships
-    @ManyToOne
-    @JoinColumn(name = "chama_address")
-    private Chama chama;
+//    @ManyToOne
+//    @JoinColumn(name = "chama_address")
+//    private Chama chama;
 
-    @ManyToOne
-    @JoinColumn(name = "borrower_wallet_address", referencedColumnName = "walletAddress")
-    private User borrower;
+//    @ManyToOne
+//    @JoinColumn(name = "borrower_wallet_address", referencedColumnName = "walletAddress")
+//    private User borrower;
 
-    @ManyToOne
-    @JoinColumn(name = "guarantor_wallet_address")
-    private User guarantor;
+//    @ManyToOne
+//    @JoinColumn(name = "guarantor_wallet_address")
+//    private User guarantor;
     // Loan details
     private BigDecimal loanAmount;
     private BigDecimal loanInterestRate;
