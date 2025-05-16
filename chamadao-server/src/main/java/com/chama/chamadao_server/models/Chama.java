@@ -1,5 +1,6 @@
 package com.chama.chamadao_server.models;
 
+import com.chama.chamadao_server.models.loan.Loan;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -60,8 +61,9 @@ public class Chama {
     private BigDecimal totalLoanRepayments;
     private BigDecimal totalLoanPenalties;
 
-    // @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private List<Loan> loans = new ArrayList<>();
+
+     @OneToMany(mappedBy = "chama", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+     private List<Loan> loans = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
