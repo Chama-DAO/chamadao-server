@@ -33,7 +33,7 @@ public class LoanService {
     private final ChamaRepository chamaRepository;
 
     public List<LoanDto> getLoansByChama(String chamaAddress) {
-        return loanRepository.findByChamaAddress(chamaAddress).stream()
+        return loanRepository.findByChama_ChamaAddress(chamaAddress).stream()
                 .map(this::mapToLoanDTO)
                 .collect(Collectors.toList());
     }
