@@ -1,7 +1,6 @@
 package com.chama.chamadao_server.controllers;
 
 import com.chama.chamadao_server.mappers.UserMapper;
-import com.chama.chamadao_server.models.User;
 import com.chama.chamadao_server.models.dto.UserDto;
 import com.chama.chamadao_server.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,9 +11,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 
 /**
@@ -27,6 +33,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "User Management", description = "APIs for managing user profiles")
+@Slf4j
 public class UserController {
 
     private final UserService userService;
@@ -153,4 +160,63 @@ public class UserController {
             return ResponseEntity.badRequest().body(null);
         }
     }
+
+    // Add these methods to your UserController
+
+@Operation(
+    summary = "Upload User profile image",
+    description = "Uploads and associates a profile image with a specific User"
+)
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+    @ApiResponse(responseCode = "400", description = "Invalid input or file format"),
+    @ApiResponse(responseCode = "404", description = "User not found"),
+    @ApiResponse(responseCode = "500", description = "Failed to process image")
+})
+@PostMapping("/{walletAddress}/image")
+public ResponseEntity<String> uploadUserProfileImage(
+        @Parameter(description = "Image file to upload", required = true)
+        @RequestParam("file") MultipartFile file,
+        @Parameter(description = "Wallet address of the User", required = true, example = "0x1234567890123456789012345678901234567890")
+        @PathVariable String walletAddress) {
+    try {
+        String imageFilename = userService.uploadUserProfileImage(file, walletAddress);
+        return ResponseEntity.ok(imageFilename);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    } catch (EntityNotFoundException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        log.error("Error uploading image: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload image");
+    }
+}
+
+@Operation(
+    summary = "Get User profile image",
+    description = "Retrieves the profile image of a specific User"
+)
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Image retrieved successfully"),
+    @ApiResponse(responseCode = "404", description = "User or image not found"),
+    @ApiResponse(responseCode = "500", description = "Server error")
+})
+@GetMapping("/{walletAddress}/image")
+public ResponseEntity<Resource> getUserProfileImage(
+        @Parameter(description = "Wallet address of the User", required = true, example = "0x1234567890123456789012345678901234567890")
+        @PathVariable String walletAddress) {
+    try {
+        Resource resource = userService.getUserProfileImage(walletAddress);
+        String contentType = userService.getUserProfileImageContentType(walletAddress);
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+    } catch (EntityNotFoundException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        log.error("Error retrieving image: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
 }

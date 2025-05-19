@@ -7,7 +7,11 @@ import com.chama.chamadao_server.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
@@ -18,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final WalletService walletService;
     private final UserMapper userMapper;
+    private final FileStorageService fileStorageService;
 
     /**
      * Validates wallet address format
@@ -130,5 +135,85 @@ public class UserService {
         log.info("Saving new user profile for wallet address: {}", walletAddress);
         User savedUser = userRepository.save(newUser);
         return userMapper.toDto(savedUser);
+    }
+
+
+    /**
+     * Upload and associate an image with a specific User
+     *
+     * @param file The image file to upload
+     * @param walletAddress The wallet address of the User
+     * @return The filename of the uploaded image
+     * @throws EntityNotFoundException if User not found
+     */
+    @Transactional
+    public String uploadUserProfileImage(MultipartFile file, String walletAddress) {
+        log.info("Processing image upload for User with wallet address: {}", walletAddress);
+        
+        // Validate wallet address
+        validateWalletAddress(walletAddress);
+        
+        // Find and validate User
+        User user = userRepository.findById(walletAddress)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with wallet address: " + walletAddress));
+        
+        try {
+            // Use FileStorageService to store the file
+            String filename = fileStorageService.storeFile(file, "user_");
+            
+            // Update User entity with image filename
+            user.setProfileImage(filename);
+            userRepository.save(user);
+            
+            log.info("Successfully uploaded image for User {}: {}", walletAddress, filename);
+            return filename;
+        } catch (Exception e) {
+            log.error("Failed to upload image for User {}: {}", walletAddress, e.getMessage(), e);
+            throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get the profile image of a User
+     *
+     * @param walletAddress The wallet address of the User
+     * @return The image as a Resource
+     * @throws EntityNotFoundException if User or image not found
+     */
+    public Resource getUserProfileImage(String walletAddress) {
+        log.info("Retrieving profile image for User with wallet address: {}", walletAddress);
+        
+        validateWalletAddress(walletAddress);
+        
+        User user = userRepository.findById(walletAddress)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with wallet address: " + walletAddress));
+        
+        String profileImage = user.getProfileImage();
+        if (profileImage == null || profileImage.isEmpty()) {
+            log.warn("No profile image found for User: {}", walletAddress);
+            throw new EntityNotFoundException("No profile image found for this User");
+        }
+        
+        return fileStorageService.loadFileAsResource(profileImage);
+    }
+
+    /**
+     * Get the content type of a User's profile image
+     * 
+     * @param walletAddress The wallet address of the User
+     * @return The content type string
+     */
+    public String getUserProfileImageContentType(String walletAddress) {
+        validateWalletAddress(walletAddress);
+        
+        User user = userRepository.findById(walletAddress)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with wallet address: " + walletAddress));
+        
+        String profileImage = user.getProfileImage();
+        if (profileImage == null || profileImage.isEmpty()) {
+            throw new EntityNotFoundException("No profile image found for this User");
+        }
+        
+        return fileStorageService.getContentType(profileImage);
     }
 }

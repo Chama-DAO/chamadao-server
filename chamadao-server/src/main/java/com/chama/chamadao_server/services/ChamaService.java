@@ -11,20 +11,12 @@ import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +25,8 @@ public class ChamaService {
     private final ChamaRepository chamaRepository;
     private final UserRepository userRepository;
     private final ChamaMapper chamaMapper;
+    private final FileStorageService fileStorageService;
 
-    @Value("${project.image}")
-    private String imageUploadDir;
 
     /**
      * Find a Chama by its wallet address
@@ -175,38 +166,6 @@ public class ChamaService {
         return chamaMapper.toDto(updatedChama);
     }
 
-    public String uploadChamaImage(MultipartFile file){
-        if (file == null || file.isEmpty()){
-            throw new IllegalArgumentException("File is null or empty");
-        }
-
-        //get the original file name
-        String originalFileName = file.getOriginalFilename();
-        if (originalFileName == null || originalFileName.isEmpty()){
-            throw new IllegalArgumentException("File name is null or empty");
-        }
-
-        //generate a unique file name
-        String randomUUID = UUID.randomUUID().toString();
-        String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
-        String fileName = randomUUID.concat(fileExtension);
-
-        //define the relative path
-        File directory = new File(imageUploadDir);
-        if (!directory.exists()){
-            directory.mkdirs();
-        }
-        //file path
-        String filePath = imageUploadDir + File.separator + fileName;
-
-        try {
-            Files.copy(file.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return fileName;
-    }
-
     /**
      * Uploads and associates an image with a specific Chama
      *
@@ -219,59 +178,66 @@ public class ChamaService {
     @Transactional
     public String uploadChamaImage(MultipartFile file, String chamaWalletAddress) {
         log.info("Processing image upload for Chama with wallet address: {}", chamaWalletAddress);
-
-        // Validate file
-        if (file == null || file.isEmpty()) {
-            log.error("File is empty or null for Chama: {}", chamaWalletAddress);
-            throw new IllegalArgumentException("Please select a valid image file");
-        }
-
-        // Validate file type
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            log.error("Invalid file type: {} for Chama: {}", contentType, chamaWalletAddress);
-            throw new IllegalArgumentException("Only image files are allowed");
-        }
-
-        // Validate file size (max 5MB)
-        long maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.getSize() > maxSize) {
-            log.error("File too large ({} bytes) for Chama: {}", file.getSize(), chamaWalletAddress);
-            throw new IllegalArgumentException("File size exceeds maximum limit of 5MB");
-        }
-
+        
         // Find and validate Chama
         Chama chama = chamaRepository.findById(chamaWalletAddress)
                 .orElseThrow(() -> new EntityNotFoundException("Chama not found with wallet address: " + chamaWalletAddress));
-
+        
         try {
-            // Create unique filename
-            String originalFilename = file.getOriginalFilename();
-            String fileExtension = originalFilename != null ?
-                    originalFilename.substring(originalFilename.lastIndexOf(".")) : ".png";
-            String newFilename = chamaWalletAddress + "_" + UUID.randomUUID() + fileExtension;
-
-            // Ensure upload directory exists
-            Path uploadPath = Paths.get(imageUploadDir);
-            if (!Files.exists(uploadPath)) {
-                log.info("Creating upload directory: {}", uploadPath);
-                Files.createDirectories(uploadPath);
-            }
-
-            // Save file to disk
-            Path filePath = uploadPath.resolve(newFilename);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            // Update Chama entity with image URL
-            chama.setProfileImage(newFilename);
+            // Use FileStorageService to store the file
+            String filename = fileStorageService.storeFile(file, "chama_");
+            
+            // Update Chama entity with image filename
+            chama.setProfileImage(filename);
             chamaRepository.save(chama);
-
-            log.info("Successfully uploaded image for Chama {}: {}", chamaWalletAddress, newFilename);
-            return newFilename;
-
-        } catch (IOException e) {
+            
+            log.info("Successfully uploaded image for Chama {}: {}", chamaWalletAddress, filename);
+            return filename;
+        } catch (Exception e) {
             log.error("Failed to upload image for Chama {}: {}", chamaWalletAddress, e.getMessage(), e);
             throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Get the image URL for a specific Chama
+     *
+     * @param chamaWalletAddress The wallet address of the Chama
+     * @return The URL/path of the Chama's image
+     * @throws EntityNotFoundException if Chama not found
+     */
+    public Resource getChamaProfileImage(String chamaWalletAddress){
+        log.info("Fetching image for Chama with wallet address: {}", chamaWalletAddress);
+        
+        // Find and validate Chama
+        Chama chama = chamaRepository.findById(chamaWalletAddress)
+                .orElseThrow(() -> new EntityNotFoundException("Chama not found with wallet address: " + chamaWalletAddress));
+        
+                String profileImage = chama.getProfileImage();
+        if (profileImage == null || profileImage.isEmpty()) {
+            log.warn("No profile image found for Chama: {}", chamaWalletAddress);
+            throw new EntityNotFoundException("No profile image found for this Chama");
+        }
+    
+        // Load the image using FileStorageService
+        return fileStorageService.loadFileAsResource(chama.getProfileImage());
+    }
+
+    /**
+     * Get the content type of a Chama's profile image
+     * 
+     * @param chamaWalletAddress The wallet address of the Chama
+     * @return The content type string
+    */
+    public String getChamaProfileImageContentType(String chamaWalletAddress) {
+        Chama chama = chamaRepository.findById(chamaWalletAddress)
+                .orElseThrow(() -> new EntityNotFoundException("Chama not found with wallet address: " + chamaWalletAddress));
+        
+        String profileImage = chama.getProfileImage();
+        if (profileImage == null || profileImage.isEmpty()) {
+            throw new EntityNotFoundException("No profile image found for this Chama");
+        }
+        
+        return fileStorageService.getContentType(profileImage);
     }
 }
