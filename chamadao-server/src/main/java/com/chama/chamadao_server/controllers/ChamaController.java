@@ -9,10 +9,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -135,35 +139,50 @@ public class ChamaController {
         return ResponseEntity.ok(updatedChama);
     }
 
-    @Operation( summary = "upload chama image", description = "end point to upload the chama profile")
-    @PostMapping("/image")
-    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(chamaService.uploadChamaImage(file));
-    }
-
-    /**
-     * Upload a profile image for a Chama
-     *
-     * @param file The image file to upload
-     * @param chamaWalletAddress The wallet address of the Chama
-     * @return The URL/path of the uploaded image
-     */
-    @Operation(summary = "Upload Chama profile image",
-            description = "Uploads and associates a profile image with a specific Chama")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input or file format"),
-            @ApiResponse(responseCode = "404", description = "Chama not found"),
-            @ApiResponse(responseCode = "500", description = "Failed to process image")
-    })
     @PostMapping("/{chamaWalletAddress}/image")
     public ResponseEntity<String> uploadChamaImage(
-            @Parameter(description = "Image file to upload", required = true)
-            @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Wallet address of the Chama", required = true)
-            @PathVariable String chamaWalletAddress) {
-        log.info("Request to upload image for Chama {}", chamaWalletAddress);
-        String imageUrl = chamaService.uploadChamaImage(file, chamaWalletAddress);
-        return ResponseEntity.ok(imageUrl);
+        @Parameter(description = "Image file to upload", required = true)
+        @RequestParam("file") MultipartFile file,
+        @Parameter(description = "Wallet address of the Chama", required = true)
+        @PathVariable String chamaWalletAddress) {
+        try {
+                String imageFilename = chamaService.uploadChamaImage(file, chamaWalletAddress);
+                return ResponseEntity.ok(imageFilename);
+        } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+                return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+                log.error("Error uploading image: {}", e.getMessage(), e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload image");
+        }
+}
+
+@Operation(
+    summary = "Get Chama profile image",
+    description = "Retrieves the profile image of a specific Chama"
+)
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Image retrieved successfully"),
+    @ApiResponse(responseCode = "404", description = "Chama or image not found"),
+    @ApiResponse(responseCode = "500", description = "Server error")
+})
+@GetMapping("/{chamaWalletAddress}/image")
+public ResponseEntity<Resource> getChamaProfileImage(
+        @Parameter(description = "Wallet address of the Chama", required = true)
+        @PathVariable String chamaWalletAddress) {
+    try {
+        Resource resource = chamaService.getChamaProfileImage(chamaWalletAddress);
+        String contentType = chamaService.getChamaProfileImageContentType(chamaWalletAddress);
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+    } catch (EntityNotFoundException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        log.error("Error retrieving image: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+        }
 }
